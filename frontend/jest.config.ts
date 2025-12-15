@@ -1,8 +1,8 @@
 export default {
-  displayName: 'flowstate',
-  preset: '../../jest.preset.js',
+  displayName: 'frontend',
+  preset: '../jest.preset.js',
   setupFilesAfterEnv: ['<rootDir>/src/test-setup.ts'],
-  coverageDirectory: '../../coverage/apps/flowstate',
+  coverageDirectory: '../coverage/frontend',
   transform: {
     '^.+\\.(ts|mjs|js|html)$': [
       'jest-preset-angular',

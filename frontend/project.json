@@ -1,26 +1,26 @@
 {
-  "name": "flowstate",
-  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "frontend",
+  "$schema": "../node_modules/nx/schemas/project-schema.json",
   "projectType": "application",
   "prefix": "app",
-  "sourceRoot": "apps/flowstate/src",
+  "sourceRoot": "frontend/src",
   "tags": [],
   "targets": {
     "build": {
       "executor": "@angular/build:application",
       "outputs": ["{options.outputPath}"],
       "options": {
-        "outputPath": "dist/apps/flowstate",
-        "browser": "apps/flowstate/src/main.ts",
+        "outputPath": "dist/frontend",
+        "browser": "frontend/src/main.ts",
         "polyfills": ["zone.js"],
-        "tsConfig": "apps/flowstate/tsconfig.app.json",
+        "tsConfig": "frontend/tsconfig.app.json",
         "assets": [
           {
             "glob": "**/*",
-            "input": "apps/flowstate/public"
+            "input": "frontend/public"
           }
         ],
-        "styles": ["apps/flowstate/src/styles.css"]
+        "styles": ["frontend/src/styles.css"]
       },
       "configurations": {
         "production": {
@@ -51,10 +51,10 @@
       "executor": "@angular/build:dev-server",
       "configurations": {
         "production": {
-          "buildTarget": "flowstate:build:production"
+          "buildTarget": "frontend:build:production"
         },
         "development": {
-          "buildTarget": "flowstate:build:development"
+          "buildTarget": "frontend:build:development"
         }
       },
       "defaultConfiguration": "development"
@@ -62,7 +62,7 @@
     "extract-i18n": {
       "executor": "@angular/build:extract-i18n",
       "options": {
-        "buildTarget": "flowstate:build"
+        "buildTarget": "frontend:build"
       }
     },
     "lint": {
@@ -72,17 +72,17 @@
       "executor": "@nx/jest:jest",
       "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
       "options": {
-        "jestConfig": "apps/flowstate/jest.config.ts",
-        "tsConfig": "apps/flowstate/tsconfig.spec.json"
+        "jestConfig": "frontend/jest.config.ts",
+        "tsConfig": "frontend/tsconfig.spec.json"
       }
     },
     "serve-static": {
       "continuous": true,
       "executor": "@nx/web:file-server",
       "options": {
-        "buildTarget": "flowstate:build",
+        "buildTarget": "frontend:build",
         "port": 4200,
-        "staticFilePath": "dist/apps/flowstate/browser",
+        "staticFilePath": "dist/frontend/browser",
         "spa": true
       }
     }

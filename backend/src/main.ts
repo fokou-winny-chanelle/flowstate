@@ -5,18 +5,15 @@
 
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app/app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   
-  // Global prefix for all routes
   const globalPrefix = 'api';
   app.setGlobalPrefix(globalPrefix);
-  
-  // Enable CORS for frontend communication
   app.use(helmet());
 
   app.enableCors({
@@ -26,7 +23,6 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Authorization'],
   });
   
-  // Global validation pipe for DTOs
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -35,13 +31,17 @@ async function bootstrap() {
     }),
   );
   
-  // Swagger API Documentation
   const config = new DocumentBuilder()
     .setTitle('FlowState API')
     .setDescription('The calm place for your busy mind - Backend API Documentation')
     .setVersion('1.0')
+    .addTag('health', 'Health check endpoint')
     .addTag('auth', 'Authentication endpoints')
     .addTag('tasks', 'Task management endpoints')
+    .addTag('projects', 'Project management endpoints')
+    .addTag('goals', 'Goals tracking endpoints')
+    .addTag('habits', 'Habits tracking endpoints')
+    .addTag('focus-sessions', 'Focus sessions and analytics endpoints')
     .addBearerAuth(
       {
         type: 'http',

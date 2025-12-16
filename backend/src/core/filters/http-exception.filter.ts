@@ -1,7 +1,7 @@
 import {
-  ExceptionFilter,
-  Catch,
   ArgumentsHost,
+  Catch,
+  ExceptionFilter,
   HttpException,
   HttpStatus,
   Logger,
@@ -27,12 +27,19 @@ export class HttpExceptionFilter implements ExceptionFilter {
         ? exception.getResponse()
         : 'Internal server error';
 
+    const errorMessage =
+      typeof message === 'string'
+        ? message
+        : typeof message === 'object' && message !== null && 'message' in message
+          ? (message as { message: string | string[] }).message
+          : message;
+
     const errorResponse = {
       statusCode: status,
       timestamp: new Date().toISOString(),
       path: request.url,
       method: request.method,
-      message: typeof message === 'string' ? message : (message as any).message || message,
+      message: errorMessage,
     };
 
     if (status >= 500) {

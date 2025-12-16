@@ -7,6 +7,10 @@ import { AppService } from './app.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { TasksModule } from '../tasks/tasks.module';
 import { AuthModule } from '../auth/auth.module';
+import { ProjectsModule } from '../projects/projects.module';
+import { GoalsModule } from '../goals/goals.module';
+import { HabitsModule } from '../habits/habits.module';
+import { FocusSessionsModule } from '../focus-sessions/focus-sessions.module';
 import { HttpExceptionFilter } from '../core/filters/http-exception.filter';
 
 @Module({
@@ -23,6 +27,10 @@ import { HttpExceptionFilter } from '../core/filters/http-exception.filter';
     PrismaModule,
     AuthModule,
     TasksModule,
+    ProjectsModule,
+    GoalsModule,
+    HabitsModule,
+    FocusSessionsModule,
   ],
   controllers: [AppController],
   providers: [

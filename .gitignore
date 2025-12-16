@@ -48,3 +48,17 @@ Thumbs.db
 error.log
 
 /generated/prisma
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Verdaccio local registry
+.verdaccio/
+
+# Documentation files (temporary)
+BACKEND_COMPLETION_PLAN.md
+
+# Nx generated files
+project.json

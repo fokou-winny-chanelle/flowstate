@@ -1,15 +1,15 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
-  IsString,
-  IsNotEmpty,
-  IsOptional,
-  IsBoolean,
-  IsDateString,
-  IsInt,
-  Min,
-  Max,
-  IsArray,
-  IsEnum,
+    IsArray,
+    IsBoolean,
+    IsDateString,
+    IsEnum,
+    IsInt,
+    IsNotEmpty,
+    IsOptional,
+    IsString,
+    Max,
+    Min,
 } from 'class-validator';
 
 export enum EnergyLevel {
@@ -80,6 +80,14 @@ export class CreateTaskDto {
   @IsString()
   @IsOptional()
   projectId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Goal identifier',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @IsString()
+  @IsOptional()
+  goalId?: string;
 
   @ApiPropertyOptional({
     description: 'Estimated duration in minutes',

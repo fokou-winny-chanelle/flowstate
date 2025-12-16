@@ -15,6 +15,7 @@ export class TaskEntity implements ITask {
   createdAt: Date | string;
   updatedAt: Date | string;
   projectId?: string;
+  goalId?: string;
   estimatedDuration?: number;
   energyLevel?: 'low' | 'medium' | 'high';
 }

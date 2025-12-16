@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -16,6 +17,8 @@ import {
 } from '@nestjs/swagger';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
+import { CreateTaskFromNlpDto } from './dto/create-task-from-nlp.dto';
+import { SnoozeTaskDto } from './dto/snooze-task.dto';
 import { TaskEntity } from './entities/task.entity';
 import { TasksService } from './tasks.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -41,16 +44,90 @@ export class TasksController {
     return this.tasksService.create(createTaskDto, user.id);
   }
 
+  @Post('from-nlp')
+  @ApiOperation({ summary: 'Create a task from natural language input' })
+  @ApiResponse({
+    status: 201,
+    description: 'The task has been successfully created from NLP input.',
+    type: TaskEntity,
+  })
+  @ApiResponse({ status: 400, description: 'Bad request.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  createFromNlp(@Body() dto: CreateTaskFromNlpDto, @CurrentUser() user: { id: string }) {
+    return this.tasksService.createFromNlp(dto.input, user.id);
+  }
+
   @Get()
-  @ApiOperation({ summary: 'Get all tasks for the current user' })
+  @ApiOperation({ summary: 'Get all tasks for the current user with optional filters' })
   @ApiResponse({
     status: 200,
     description: 'List of all tasks.',
     type: [TaskEntity],
   })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
-  findAll(@CurrentUser() user: { id: string }) {
-    return this.tasksService.findAll(user.id);
+  findAll(
+    @CurrentUser() user: { id: string },
+    @Query('isCompleted') isCompleted?: string,
+    @Query('projectId') projectId?: string,
+    @Query('goalId') goalId?: string,
+    @Query('tags') tags?: string,
+    @Query('priority') priority?: string,
+    @Query('energyLevel') energyLevel?: string,
+  ) {
+    const filters: {
+      isCompleted?: boolean;
+      projectId?: string;
+      goalId?: string;
+      tags?: string[];
+      priority?: number;
+      energyLevel?: string;
+    } = {};
+
+    if (isCompleted !== undefined) {
+      filters.isCompleted = isCompleted === 'true';
+    }
+    if (projectId) {
+      filters.projectId = projectId;
+    }
+    if (goalId) {
+      filters.goalId = goalId;
+    }
+    if (tags) {
+      filters.tags = tags.split(',');
+    }
+    if (priority) {
+      filters.priority = parseInt(priority, 10);
+    }
+    if (energyLevel) {
+      filters.energyLevel = energyLevel;
+    }
+
+    return this.tasksService.findAll(user.id, filters);
+  }
+
+  @Get('today')
+  @ApiOperation({ summary: 'Get today\'s tasks' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of today\'s tasks.',
+    type: [TaskEntity],
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  findToday(@CurrentUser() user: { id: string }) {
+    return this.tasksService.findToday(user.id);
+  }
+
+  @Get('upcoming')
+  @ApiOperation({ summary: 'Get upcoming tasks' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of upcoming tasks.',
+    type: [TaskEntity],
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  findUpcoming(@CurrentUser() user: { id: string }, @Query('days') days?: string) {
+    const daysCount = days ? parseInt(days, 10) : 7;
+    return this.tasksService.findUpcoming(user.id, daysCount);
   }
 
   @Get(':id')
@@ -81,6 +158,37 @@ export class TasksController {
     @CurrentUser() user: { id: string },
   ) {
     return this.tasksService.update(id, updateTaskDto, user.id);
+  }
+
+  @Post(':id/complete')
+  @ApiOperation({ summary: 'Mark a task as completed' })
+  @ApiResponse({
+    status: 200,
+    description: 'The task has been marked as completed.',
+    type: TaskEntity,
+  })
+  @ApiResponse({ status: 404, description: 'Task not found.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  complete(@Param('id') id: string, @CurrentUser() user: { id: string }) {
+    return this.tasksService.complete(id, user.id);
+  }
+
+  @Post(':id/snooze')
+  @ApiOperation({ summary: 'Snooze a task until a specific date' })
+  @ApiResponse({
+    status: 200,
+    description: 'The task has been snoozed.',
+    type: TaskEntity,
+  })
+  @ApiResponse({ status: 400, description: 'Invalid snooze date (must be in the future).' })
+  @ApiResponse({ status: 404, description: 'Task not found.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  snooze(
+    @Param('id') id: string,
+    @Body() snoozeTaskDto: SnoozeTaskDto,
+    @CurrentUser() user: { id: string },
+  ) {
+    return this.tasksService.snooze(id, user.id, new Date(snoozeTaskDto.until));
   }
 
   @Delete(':id')

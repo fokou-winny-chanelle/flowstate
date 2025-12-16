@@ -9,7 +9,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
-import { EmailService } from '../email/email.service';
+import { MailerService } from '@flowstate/shared/mailer';
 import { PrismaService } from '../prisma/prisma.service';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
@@ -24,7 +24,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private configService: ConfigService,
-    private emailService: EmailService,
+    private mailerService: MailerService,
   ) {}
 
   async signup(signupDto: SignupDto) {
@@ -73,7 +73,11 @@ export class AuthService {
       },
     });
 
-    await this.emailService.sendOtpEmail(sendOtpDto.email, otpCode);
+    if (sendOtpDto.type === OtpType.RESET_PASSWORD) {
+      await this.mailerService.sendPasswordResetEmail(sendOtpDto.email, { otpCode });
+    } else {
+      await this.mailerService.sendOtpEmail(sendOtpDto.email, { otpCode });
+    }
 
     return {
       message: 'OTP sent successfully to your email',
@@ -120,7 +124,7 @@ export class AuthService {
           data: { isEmailVerified: true },
         });
 
-        await this.emailService.sendWelcomeEmail(user.email, user.fullName || 'User');
+        await this.mailerService.sendWelcomeEmail(user.email, { name: user.fullName || 'User' });
       }
     }
 

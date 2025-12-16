@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client"
   output   = "../../../node_modules/.prisma/client"
@@ -11,21 +8,27 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(uuid())
-  email         String    @unique
-  password      String
-  fullName      String?
-  isEmailVerified Boolean  @default(false)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  deletedAt     DateTime?
+  id              String    @id @default(uuid())
+  email           String    @unique
+  password        String
+  fullName        String?
+  isEmailVerified Boolean   @default(false)
+  preferences     Json?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
 
-  tasks         Task[]
-  refreshTokens RefreshToken[]
-  otps          Otp[]
+  tasks          Task[]
+  refreshTokens  RefreshToken[]
+  otps           Otp[]
+  ownedProjects  Project[]       @relation("ProjectOwner")
+  projectMembers ProjectMember[] @relation("ProjectMember")
+  goals          Goal[]          @relation("GoalOwner")
+  habits         Habit[]         @relation("HabitOwner")
+  focusSessions  FocusSession[]  @relation("FocusSessionOwner")
 
-  @@map("users")
   @@index([email])
+  @@map("users")
 }
 
 model Otp {
@@ -38,49 +41,153 @@ model Otp {
   used      Boolean  @default(false)
   createdAt DateTime @default(now())
 
-  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@map("otps")
   @@index([email, code, type])
   @@index([expiresAt])
+  @@map("otps")
 }
 
 model RefreshToken {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   userId    String
-  token     String   @unique
-  jti       String   @unique
+  token     String    @unique
+  jti       String    @unique
   expiresAt DateTime
   revokedAt DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@map("refresh_tokens")
   @@index([userId])
   @@index([jti])
   @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+model Project {
+  id          String    @id @default(uuid())
+  userId      String
+  name        String
+  description String?
+  color       String    @default("#14A800")
+  deadline    DateTime?
+  progress    Float     @default(0.0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  owner   User            @relation("ProjectOwner", fields: [userId], references: [id], onDelete: Cascade)
+  tasks   Task[]
+  members ProjectMember[]
+  goals   Goal[]
+
+  @@index([userId])
+  @@index([deletedAt])
+  @@map("projects")
+}
+
+model ProjectMember {
+  id        String   @id @default(uuid())
+  projectId String
+  userId    String
+  role      String   @default("member")
+  joinedAt  DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation("ProjectMember", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@index([projectId])
+  @@index([userId])
+  @@map("project_members")
+}
+
+model Goal {
+  id         String    @id @default(uuid())
+  userId     String
+  projectId  String?
+  title      String
+  type       String
+  targetDate DateTime?
+  progress   Float     @default(0.0)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  user    User     @relation("GoalOwner", fields: [userId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  habits  Habit[]
+  tasks   Task[]
+
+  @@index([userId])
+  @@index([type])
+  @@map("goals")
+}
+
+model Habit {
+  id            String   @id @default(uuid())
+  userId        String
+  goalId        String?
+  name          String
+  schedule      Json
+  streakCurrent Int      @default(0)
+  streakBest    Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user User  @relation("HabitOwner", fields: [userId], references: [id], onDelete: Cascade)
+  goal Goal? @relation(fields: [goalId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([goalId])
+  @@map("habits")
+}
+
+model FocusSession {
+  id              String    @id @default(uuid())
+  userId          String
+  taskId          String?
+  plannedDuration Int
+  actualDuration  Int?
+  startTime       DateTime
+  endTime         DateTime?
+  focusRating     Int?
+  createdAt       DateTime  @default(now())
+
+  user User  @relation("FocusSessionOwner", fields: [userId], references: [id], onDelete: Cascade)
+  task Task? @relation(fields: [taskId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([startTime])
+  @@map("focus_sessions")
 }
 
 model Task {
-  id                String   @id @default(uuid())
+  id                String    @id @default(uuid())
   userId            String
   title             String
   description       String?
-  isCompleted       Boolean  @default(false)
+  isCompleted       Boolean   @default(false)
   dueDate           DateTime?
-  priority          Int?     @default(3)
-  tags              String[] @default([])
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  priority          Int?      @default(3)
+  tags              String[]  @default([])
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
   deletedAt         DateTime?
   projectId         String?
+  goalId            String?
   estimatedDuration Int?
   energyLevel       String?
+  metadata          Json?
+  rawNlpInput       String?
 
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project       Project?       @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  goal          Goal?          @relation(fields: [goalId], references: [id], onDelete: SetNull)
+  focusSessions FocusSession[]
 
-  @@map("tasks")
   @@index([userId, isCompleted, dueDate])
+  @@index([projectId])
+  @@index([goalId])
+  @@map("tasks")
 }
-

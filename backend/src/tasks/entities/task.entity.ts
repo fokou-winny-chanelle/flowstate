@@ -19,3 +19,4 @@ export class TaskEntity implements ITask {
   energyLevel?: 'low' | 'medium' | 'high';
 }
 
+

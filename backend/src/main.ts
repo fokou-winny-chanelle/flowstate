@@ -6,6 +6,7 @@
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import helmet from 'helmet';
 import { AppModule } from './app/app.module';
 
 async function bootstrap() {
@@ -16,9 +17,13 @@ async function bootstrap() {
   app.setGlobalPrefix(globalPrefix);
   
   // Enable CORS for frontend communication
+  app.use(helmet());
+
   app.enableCors({
     origin: process.env.FRONTEND_URL || 'http://localhost:4200',
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   });
   
   // Global validation pipe for DTOs
@@ -35,8 +40,19 @@ async function bootstrap() {
     .setTitle('FlowState API')
     .setDescription('The calm place for your busy mind - Backend API Documentation')
     .setVersion('1.0')
+    .addTag('auth', 'Authentication endpoints')
     .addTag('tasks', 'Task management endpoints')
-    .addBearerAuth()
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'JWT',
+        description: 'Enter JWT token',
+        in: 'header',
+      },
+      'JWT-auth',
+    )
     .build();
   
   const document = SwaggerModule.createDocument(app, config);
@@ -46,10 +62,10 @@ async function bootstrap() {
   await app.listen(port);
   
   Logger.log(
-    `🚀 Application is running on: http://localhost:${port}/${globalPrefix}`
+    `Application is running on: http://localhost:${port}/${globalPrefix}`
   );
   Logger.log(
-    `📚 Swagger documentation available at: http://localhost:${port}/api/docs`
+    `Swagger documentation available at: http://localhost:${port}/api/docs`
   );
 }
 

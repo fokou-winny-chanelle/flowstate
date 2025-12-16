@@ -1,25 +1,30 @@
 import {
-    Body,
-    Controller,
-    Delete,
-    Get,
-    Param,
-    Patch,
-    Post,
-    Request,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
 } from '@nestjs/common';
 import {
-    ApiOperation,
-    ApiResponse,
-    ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { TaskEntity } from './entities/task.entity';
 import { TasksService } from './tasks.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @ApiTags('tasks')
 @Controller('tasks')
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
 export class TasksController {
   constructor(private readonly tasksService: TasksService) {}
 
@@ -31,11 +36,9 @@ export class TasksController {
     type: TaskEntity,
   })
   @ApiResponse({ status: 400, description: 'Bad request.' })
-  create(@Body() createTaskDto: CreateTaskDto, @Request() req: { user?: { id: string } }) {
-    // TODO: Implement authentication guard to get userId from token
-    // For now, using a placeholder userId for development
-    const userId = req.user?.id || 'placeholder-user-id';
-    return this.tasksService.create(createTaskDto, userId);
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  create(@Body() createTaskDto: CreateTaskDto, @CurrentUser() user: { id: string }) {
+    return this.tasksService.create(createTaskDto, user.id);
   }
 
   @Get()
@@ -45,10 +48,9 @@ export class TasksController {
     description: 'List of all tasks.',
     type: [TaskEntity],
   })
-  findAll(@Request() req: { user?: { id: string } }) {
-    // TODO: Implement authentication guard
-    const userId = req.user?.id || 'placeholder-user-id';
-    return this.tasksService.findAll(userId);
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  findAll(@CurrentUser() user: { id: string }) {
+    return this.tasksService.findAll(user.id);
   }
 
   @Get(':id')
@@ -59,9 +61,9 @@ export class TasksController {
     type: TaskEntity,
   })
   @ApiResponse({ status: 404, description: 'Task not found.' })
-  findOne(@Param('id') id: string, @Request() req: { user?: { id: string } }) {
-    const userId = req.user?.id || 'placeholder-user-id';
-    return this.tasksService.findOne(id, userId);
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  findOne(@Param('id') id: string, @CurrentUser() user: { id: string }) {
+    return this.tasksService.findOne(id, user.id);
   }
 
   @Patch(':id')
@@ -72,13 +74,13 @@ export class TasksController {
     type: TaskEntity,
   })
   @ApiResponse({ status: 404, description: 'Task not found.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
   update(
     @Param('id') id: string,
     @Body() updateTaskDto: UpdateTaskDto,
-    @Request() req: { user?: { id: string } },
+    @CurrentUser() user: { id: string },
   ) {
-    const userId = req.user?.id || 'placeholder-user-id';
-    return this.tasksService.update(id, updateTaskDto, userId);
+    return this.tasksService.update(id, updateTaskDto, user.id);
   }
 
   @Delete(':id')
@@ -88,9 +90,9 @@ export class TasksController {
     description: 'The task has been successfully deleted.',
   })
   @ApiResponse({ status: 404, description: 'Task not found.' })
-  remove(@Param('id') id: string, @Request() req: { user?: { id: string } }) {
-    const userId = req.user?.id || 'placeholder-user-id';
-    return this.tasksService.remove(id, userId);
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  remove(@Param('id') id: string, @CurrentUser() user: { id: string }) {
+    return this.tasksService.remove(id, user.id);
   }
 }
 

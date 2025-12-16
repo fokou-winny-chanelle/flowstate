@@ -1,0 +1,32 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../../../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Task {
+  id                String   @id @default(uuid())
+  userId            String   
+  title             String
+  description       String?
+  isCompleted       Boolean  @default(false)
+  dueDate           DateTime?
+  priority          Int?     @default(3) // 1-5, where 5 is highest
+  tags              String[] @default([])
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  deletedAt         DateTime? // Soft delete
+  projectId         String?
+  estimatedDuration Int?     // in minutes
+  energyLevel       String?  // 'low', 'medium', 'high'
+
+  @@map("tasks")
+  @@index([userId, isCompleted, dueDate])
+}
+

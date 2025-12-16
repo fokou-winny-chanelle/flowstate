@@ -15,7 +15,8 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@flowstate/shared": ["libs/src/index.ts"]
+      "@flowstate/shared": ["libs/src/index.ts"],
+      "@flowstate/shared/mailer": ["libs/shared/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

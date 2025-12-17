@@ -4,9 +4,9 @@ import {
     Injectable,
     NotFoundException,
 } from '@nestjs/common';
-import { MailerService } from '@flowstate/shared/mailer';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
+import { EmailQueueService } from '../email-queue/email-queue.service';
 import { AddMemberDto, ProjectRole } from './dto/add-member.dto';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
@@ -16,7 +16,7 @@ import { ProjectEntity } from './entities/project.entity';
 export class ProjectsService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly mailerService: MailerService,
+    private readonly emailQueue: EmailQueueService,
     private readonly configService: ConfigService,
   ) {}
 
@@ -191,7 +191,7 @@ export class ProjectsService {
     try {
       const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:4200';
       
-      await this.mailerService.sendProjectInvitationEmail(invitedUser.email, {
+      await this.emailQueue.addProjectInvitationEmail(invitedUser.email, {
         inviteeName: invitedUser.fullName || 'there',
         inviterName: project.owner.fullName || 'A FlowState user',
         projectName: project.name,

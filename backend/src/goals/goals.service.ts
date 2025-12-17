@@ -1,7 +1,7 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { MailerService } from '@flowstate/shared/mailer';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
+import { EmailQueueService } from '../email-queue/email-queue.service';
 import { CreateGoalDto } from './dto/create-goal.dto';
 import { UpdateGoalDto } from './dto/update-goal.dto';
 import { GoalEntity } from './entities/goal.entity';
@@ -12,7 +12,7 @@ export class GoalsService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly mailerService: MailerService,
+    private readonly emailQueue: EmailQueueService,
     private readonly configService: ConfigService,
   ) {}
 
@@ -182,7 +182,7 @@ export class GoalsService {
         .map((task) => `✅ ${task.title}`)
         .join('\n');
 
-      await this.mailerService.sendGoalMilestoneEmail(goal.user.email, {
+      await this.emailQueue.addGoalMilestoneEmail(goal.user.email, {
         userName: goal.user.fullName || 'there',
         goalName: goal.title,
         progress: Math.round(newProgress),

@@ -60,6 +60,37 @@ export interface ProjectInvitationEmailContext extends Record<string, unknown> {
   acceptUrl: string;
 }
 
+export interface TaskReminderEmailContext extends Record<string, unknown> {
+  userName: string;
+  taskTitle: string;
+  projectName: string;
+  priority: string;
+  estimatedTime: number;
+  taskUrl: string;
+  settingsUrl: string;
+}
+
+export interface OverdueSummaryEmailContext extends Record<string, unknown> {
+  userName: string;
+  overdueCount: number;
+  overdueTasks: string;
+  reviewUrl: string;
+  settingsUrl: string;
+}
+
+export interface FocusReportEmailContext extends Record<string, unknown> {
+  userName: string;
+  totalHours: number;
+  totalMinutes: number;
+  totalSessions: number;
+  averageDuration: number;
+  mostProductiveDay: string;
+  averageMood: string;
+  topTasks: string;
+  analyticsUrl: string;
+  settingsUrl: string;
+}
+
 @Injectable()
 export class MailerService {
   private readonly logger = new Logger(MailerService.name);
@@ -222,6 +253,42 @@ export class MailerService {
       to,
       subject: `${context.inviterName} invited you to "${context.projectName}" on FlowState`,
       template: 'project-invitation',
+      context,
+    });
+  }
+
+  async sendTaskReminderEmail(
+    to: string,
+    context: TaskReminderEmailContext,
+  ): Promise<void> {
+    await this.sendEmail({
+      to,
+      subject: `⏰ Reminder: "${context.taskTitle}" is due tomorrow`,
+      template: 'task-reminder',
+      context,
+    });
+  }
+
+  async sendOverdueSummaryEmail(
+    to: string,
+    context: OverdueSummaryEmailContext,
+  ): Promise<void> {
+    await this.sendEmail({
+      to,
+      subject: `⚠️ You have ${context.overdueCount} overdue task${context.overdueCount > 1 ? 's' : ''}`,
+      template: 'overdue-summary',
+      context,
+    });
+  }
+
+  async sendFocusReportEmail(
+    to: string,
+    context: FocusReportEmailContext,
+  ): Promise<void> {
+    await this.sendEmail({
+      to,
+      subject: `📊 Your Weekly Focus Report - ${context.totalHours}h ${context.totalMinutes}m this week!`,
+      template: 'focus-report',
       context,
     });
   }

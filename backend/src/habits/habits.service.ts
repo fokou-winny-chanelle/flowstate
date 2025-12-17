@@ -1,7 +1,7 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { MailerService } from '@flowstate/shared/mailer';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
+import { EmailQueueService } from '../email-queue/email-queue.service';
 import { CreateHabitDto } from './dto/create-habit.dto';
 import { UpdateHabitDto } from './dto/update-habit.dto';
 import { HabitEntity } from './entities/habit.entity';
@@ -12,7 +12,7 @@ export class HabitsService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly mailerService: MailerService,
+    private readonly emailQueue: EmailQueueService,
     private readonly configService: ConfigService,
   ) {}
 
@@ -179,7 +179,7 @@ export class HabitsService {
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - newStreak);
 
-      await this.mailerService.sendStreakMilestoneEmail(habit.user.email, {
+      await this.emailQueue.addStreakMilestoneEmail(habit.user.email, {
         userName: habit.user.fullName || 'there',
         habitName: habit.name,
         streakDays: newStreak,

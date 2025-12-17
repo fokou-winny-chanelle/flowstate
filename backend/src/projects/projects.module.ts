@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
-import { MailerModule } from '@flowstate/shared/mailer';
 import { PrismaModule } from '../prisma/prisma.module';
+import { EmailQueueModule } from '../email-queue/email-queue.module';
 import { ProjectsController } from './projects.controller';
 import { ProjectsService } from './projects.service';
 
 @Module({
-  imports: [PrismaModule, MailerModule],
+  imports: [PrismaModule, EmailQueueModule],
   controllers: [ProjectsController],
   providers: [ProjectsService],
   exports: [ProjectsService],

@@ -1,4 +1,3 @@
-import { MailerService } from '@flowstate/shared/mailer';
 import {
   BadRequestException,
   ConflictException,
@@ -10,6 +9,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
+import { EmailQueueService } from '../email-queue/email-queue.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
@@ -24,7 +24,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private configService: ConfigService,
-    private mailerService: MailerService,
+    private emailQueue: EmailQueueService,
   ) {}
 
   async signup(signupDto: SignupDto) {
@@ -71,9 +71,9 @@ export class AuthService {
     });
 
     if (sendOtpDto.type === OtpType.RESET_PASSWORD) {
-      await this.mailerService.sendPasswordResetEmail(sendOtpDto.email, { otpCode });
+      await this.emailQueue.addPasswordResetEmail(sendOtpDto.email, { otpCode });
     } else {
-      await this.mailerService.sendOtpEmail(sendOtpDto.email, { otpCode });
+      await this.emailQueue.addOtpEmail(sendOtpDto.email, { otpCode });
     }
 
     return {
@@ -118,7 +118,7 @@ export class AuthService {
           }),
         ]);
 
-        await this.mailerService.sendWelcomeEmail(user.email, { name: user.fullName || 'User' });
+        await this.emailQueue.addWelcomeEmail(user.email, { name: user.fullName || 'User' });
       }
     } else {
       await this.prisma.otp.update({

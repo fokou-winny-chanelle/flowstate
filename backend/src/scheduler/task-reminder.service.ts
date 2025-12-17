@@ -14,7 +14,9 @@ export class TaskReminderService {
     private readonly configService: ConfigService,
   ) {}
 
-  @Cron(CronExpression.EVERY_DAY_AT_9AM)
+  @Cron(CronExpression.EVERY_DAY_AT_9AM, {
+    timeZone: 'Europe/Paris',
+  })
   async sendTaskReminders(): Promise<void> {
     this.logger.log('Starting task reminder job');
 

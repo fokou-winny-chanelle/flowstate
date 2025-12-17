@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
 import { ConfigService } from '@nestjs/config';
-import { PrismaService } from '../prisma/prisma.service';
+import { Cron } from '@nestjs/schedule';
 import { EmailQueueService } from '../email-queue/email-queue.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class FocusReportService {
@@ -14,7 +14,9 @@ export class FocusReportService {
     private readonly configService: ConfigService,
   ) {}
 
-  @Cron('0 17 * * 0') // Every Sunday at 5 PM
+  @Cron('0 17 * * 0', {
+    timeZone: 'Europe/Paris',
+  })
   async sendWeeklyFocusReports(): Promise<void> {
     this.logger.log('Starting weekly focus report job');
 

@@ -4,6 +4,7 @@ import { EmailQueueModule } from '../email-queue/email-queue.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { FocusReportService } from './focus-report.service';
 import { OverdueTasksService } from './overdue-tasks.service';
+import { SchedulerController } from './scheduler.controller';
 import { TaskReminderService } from './task-reminder.service';
 
 @Module({
@@ -12,6 +13,7 @@ import { TaskReminderService } from './task-reminder.service';
     PrismaModule,
     EmailQueueModule,
   ],
+  controllers: [SchedulerController],
   providers: [
     TaskReminderService,
     OverdueTasksService,

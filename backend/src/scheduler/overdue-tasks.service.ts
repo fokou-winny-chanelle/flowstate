@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
 import { ConfigService } from '@nestjs/config';
-import { PrismaService } from '../prisma/prisma.service';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { EmailQueueService } from '../email-queue/email-queue.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class OverdueTasksService {
@@ -14,7 +14,9 @@ export class OverdueTasksService {
     private readonly configService: ConfigService,
   ) {}
 
-  @Cron(CronExpression.EVERY_DAY_AT_7AM)
+  @Cron(CronExpression.EVERY_DAY_AT_7AM, {
+    timeZone: 'Europe/Paris',
+  })
   async sendOverdueTasksSummary(): Promise<void> {
     this.logger.log('Starting overdue tasks summary job');
 

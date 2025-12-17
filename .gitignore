@@ -53,13 +53,21 @@ error.log
 .env
 .env.local
 .env.*.local
+*.env
+*ENV_CONFIG*
+*_ENV_*
 
 # Verdaccio local registry
 .verdaccio/
 
-# Documentation files (temporary)
+# Documentation files (temporary/development guides)
 BACKEND_COMPLETION_PLAN.md
+BACKEND_COMPLETE_GUIDE.md
+BACKEND_AUDIT.md
+REDIS_SETUP.md
 ROADMAP.md
+DOCKER_GUIDE.md
+GMAIL_SETUP_INSTRUCTIONS.md
 
 # Nx generated files
 project.json

@@ -22,6 +22,44 @@ export interface WelcomeEmailContext {
   name: string;
 }
 
+export interface PasswordResetEmailContext {
+  otpCode: string;
+  expiresIn?: string;
+}
+
+export interface GoalMilestoneEmailContext extends Record<string, unknown> {
+  userName: string;
+  goalName: string;
+  progress: number;
+  completedTasks: number;
+  totalTasks: number;
+  recentTasks: string;
+  goalUrl: string;
+  settingsUrl: string;
+}
+
+export interface StreakMilestoneEmailContext extends Record<string, unknown> {
+  userName: string;
+  habitName: string;
+  streakDays: number;
+  bestStreak: number;
+  frequency: string;
+  startDate: string;
+  habitUrl: string;
+  settingsUrl: string;
+}
+
+export interface ProjectInvitationEmailContext extends Record<string, unknown> {
+  inviteeName: string;
+  inviterName: string;
+  projectName: string;
+  projectDescription: string;
+  role: string;
+  progress: number;
+  deadline: string;
+  acceptUrl: string;
+}
+
 @Injectable()
 export class MailerService {
   private readonly logger = new Logger(MailerService.name);
@@ -139,7 +177,7 @@ export class MailerService {
 
   async sendPasswordResetEmail(
     to: string,
-    context: OtpEmailContext,
+    context: PasswordResetEmailContext,
   ): Promise<void> {
     await this.sendEmail({
       to,
@@ -149,6 +187,42 @@ export class MailerService {
         otpCode: context.otpCode,
         expiresIn: context.expiresIn || '10 minutes',
       },
+    });
+  }
+
+  async sendGoalMilestoneEmail(
+    to: string,
+    context: GoalMilestoneEmailContext,
+  ): Promise<void> {
+    await this.sendEmail({
+      to,
+      subject: `Milestone reached! 🎉 ${context.goalName} is ${context.progress}% complete`,
+      template: 'goal-milestone',
+      context,
+    });
+  }
+
+  async sendStreakMilestoneEmail(
+    to: string,
+    context: StreakMilestoneEmailContext,
+  ): Promise<void> {
+    await this.sendEmail({
+      to,
+      subject: `🔥 ${context.streakDays}-day streak! You're on fire!`,
+      template: 'streak-milestone',
+      context,
+    });
+  }
+
+  async sendProjectInvitationEmail(
+    to: string,
+    context: ProjectInvitationEmailContext,
+  ): Promise<void> {
+    await this.sendEmail({
+      to,
+      subject: `${context.inviterName} invited you to "${context.projectName}" on FlowState`,
+      template: 'project-invitation',
+      context,
     });
   }
 }

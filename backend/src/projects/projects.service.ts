@@ -4,6 +4,8 @@ import {
     Injectable,
     NotFoundException,
 } from '@nestjs/common';
+import { MailerService } from '@flowstate/shared/mailer';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { AddMemberDto, ProjectRole } from './dto/add-member.dto';
 import { CreateProjectDto } from './dto/create-project.dto';
@@ -12,7 +14,11 @@ import { ProjectEntity } from './entities/project.entity';
 
 @Injectable()
 export class ProjectsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mailerService: MailerService,
+    private readonly configService: ConfigService,
+  ) {}
 
   async create(createProjectDto: CreateProjectDto, userId: string): Promise<ProjectEntity> {
     const project = await this.prisma.project.create({
@@ -130,11 +136,22 @@ export class ProjectsService {
   ): Promise<void> {
     await this.ensureAccess(projectId, userId, [ProjectRole.OWNER, ProjectRole.ADMIN]);
 
-    const user = await this.prisma.user.findUnique({
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      include: {
+        owner: true,
+      },
+    });
+
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
+
+    const invitedUser = await this.prisma.user.findUnique({
       where: { email: addMemberDto.email },
     });
 
-    if (!user) {
+    if (!invitedUser) {
       throw new NotFoundException(`User with email ${addMemberDto.email} not found`);
     }
 
@@ -142,7 +159,7 @@ export class ProjectsService {
       where: {
         projectId_userId: {
           projectId,
-          userId: user.id,
+          userId: invitedUser.id,
         },
       },
     });
@@ -154,10 +171,41 @@ export class ProjectsService {
     await this.prisma.projectMember.create({
       data: {
         projectId,
-        userId: user.id,
+        userId: invitedUser.id,
         role: addMemberDto.role,
       },
     });
+
+    await this.sendProjectInvitationEmail(
+      project,
+      invitedUser,
+      addMemberDto.role,
+    );
+  }
+
+  private async sendProjectInvitationEmail(
+    project: any,
+    invitedUser: any,
+    role: ProjectRole,
+  ): Promise<void> {
+    try {
+      const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:4200';
+      
+      await this.mailerService.sendProjectInvitationEmail(invitedUser.email, {
+        inviteeName: invitedUser.fullName || 'there',
+        inviterName: project.owner.fullName || 'A FlowState user',
+        projectName: project.name,
+        projectDescription: project.description || 'No description provided',
+        role,
+        progress: Math.round(project.progress),
+        deadline: project.deadline 
+          ? new Date(project.deadline).toLocaleDateString() 
+          : 'No deadline set',
+        acceptUrl: `${frontendUrl}/projects/${project.id}`,
+      });
+    } catch (error) {
+      console.error('Failed to send project invitation email:', error);
+    }
   }
 
   async removeMember(projectId: string, memberUserId: string, userId: string): Promise<void> {

@@ -1,4 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { MailerService } from '@flowstate/shared/mailer';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateHabitDto } from './dto/create-habit.dto';
 import { UpdateHabitDto } from './dto/update-habit.dto';
@@ -6,7 +8,13 @@ import { HabitEntity } from './entities/habit.entity';
 
 @Injectable()
 export class HabitsService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly streakMilestones = [7, 30, 100];
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mailerService: MailerService,
+    private readonly configService: ConfigService,
+  ) {}
 
   async create(createHabitDto: CreateHabitDto, userId: string): Promise<HabitEntity> {
     this.validateSchedule(createHabitDto.schedule);
@@ -105,7 +113,14 @@ export class HabitsService {
   }
 
   async complete(id: string, userId: string): Promise<HabitEntity> {
-    const habit = await this.findOne(id, userId);
+    const habit = await this.prisma.habit.findFirst({
+      where: { id, userId },
+      include: { user: true },
+    });
+
+    if (!habit) {
+      throw new NotFoundException('Habit not found');
+    }
 
     const schedule = habit.schedule as { days: string[]; time?: string };
     const today = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
@@ -114,7 +129,8 @@ export class HabitsService {
       throw new BadRequestException(`This habit is not scheduled for ${today}`);
     }
 
-    const newStreak = habit.streakCurrent + 1;
+    const oldStreak = habit.streakCurrent;
+    const newStreak = oldStreak + 1;
     const newBest = Math.max(habit.streakBest, newStreak);
 
     const updated = await this.prisma.habit.update({
@@ -125,7 +141,57 @@ export class HabitsService {
       },
     });
 
+    await this.checkAndSendStreakMilestoneEmail(
+      habit,
+      oldStreak,
+      newStreak,
+      newBest,
+      schedule,
+    );
+
     return this.mapToEntity(updated);
+  }
+
+  private async checkAndSendStreakMilestoneEmail(
+    habit: any,
+    oldStreak: number,
+    newStreak: number,
+    bestStreak: number,
+    schedule: { days: string[]; time?: string },
+  ): Promise<void> {
+    const crossedMilestone = this.streakMilestones.find(
+      (milestone) => oldStreak < milestone && newStreak >= milestone,
+    );
+
+    if (!crossedMilestone) {
+      return;
+    }
+
+    try {
+      const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:4200';
+      const frequencyMap: Record<number, string> = {
+        1: 'Daily',
+        7: 'Weekly',
+        30: 'Monthly',
+      };
+      const frequency = frequencyMap[schedule.days.length] || `${schedule.days.length} days/week`;
+      
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - newStreak);
+
+      await this.mailerService.sendStreakMilestoneEmail(habit.user.email, {
+        userName: habit.user.fullName || 'there',
+        habitName: habit.name,
+        streakDays: newStreak,
+        bestStreak,
+        frequency,
+        startDate: startDate.toLocaleDateString(),
+        habitUrl: `${frontendUrl}/habits/${habit.id}`,
+        settingsUrl: `${frontendUrl}/settings/notifications`,
+      });
+    } catch (error) {
+      console.error('Failed to send streak milestone email:', error);
+    }
   }
 
   async resetStreak(id: string, userId: string): Promise<HabitEntity> {

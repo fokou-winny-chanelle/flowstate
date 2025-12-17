@@ -1,4 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { MailerService } from '@flowstate/shared/mailer';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateGoalDto } from './dto/create-goal.dto';
 import { UpdateGoalDto } from './dto/update-goal.dto';
@@ -6,7 +8,13 @@ import { GoalEntity } from './entities/goal.entity';
 
 @Injectable()
 export class GoalsService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly milestones = [25, 50, 75, 100];
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mailerService: MailerService,
+    private readonly configService: ConfigService,
+  ) {}
 
   async create(createGoalDto: CreateGoalDto, userId: string): Promise<GoalEntity> {
     if (createGoalDto.projectId) {
@@ -107,10 +115,24 @@ export class GoalsService {
   }
 
   async calculateProgress(goalId: string): Promise<number> {
+    const goal = await this.prisma.goal.findUnique({
+      where: { id: goalId },
+      include: { user: true },
+    });
+
+    if (!goal) {
+      return 0;
+    }
+
+    const oldProgress = goal.progress;
+
     const tasks = await this.prisma.task.findMany({
       where: {
         goalId,
         deletedAt: null,
+      },
+      orderBy: {
+        createdAt: 'desc',
       },
     });
 
@@ -126,7 +148,53 @@ export class GoalsService {
       data: { progress },
     });
 
+    await this.checkAndSendMilestoneEmail(
+      goal,
+      oldProgress,
+      progress,
+      completed,
+      tasks.length,
+      tasks.slice(0, 3),
+    );
+
     return progress;
+  }
+
+  private async checkAndSendMilestoneEmail(
+    goal: any,
+    oldProgress: number,
+    newProgress: number,
+    completedTasks: number,
+    totalTasks: number,
+    recentTasks: any[],
+  ): Promise<void> {
+    const crossedMilestone = this.milestones.find(
+      (milestone) => oldProgress < milestone && newProgress >= milestone,
+    );
+
+    if (!crossedMilestone) {
+      return;
+    }
+
+    try {
+      const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:4200';
+      const recentTasksList = recentTasks
+        .map((task) => `✅ ${task.title}`)
+        .join('\n');
+
+      await this.mailerService.sendGoalMilestoneEmail(goal.user.email, {
+        userName: goal.user.fullName || 'there',
+        goalName: goal.title,
+        progress: Math.round(newProgress),
+        completedTasks,
+        totalTasks,
+        recentTasks: recentTasksList || 'No recent tasks',
+        goalUrl: `${frontendUrl}/goals/${goal.id}`,
+        settingsUrl: `${frontendUrl}/settings/notifications`,
+      });
+    } catch (error) {
+      console.error('Failed to send goal milestone email:', error);
+    }
   }
 
   async updateProgress(

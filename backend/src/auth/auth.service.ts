@@ -101,24 +101,30 @@ export class AuthService {
       throw new BadRequestException('Invalid or expired OTP');
     }
 
-    await this.prisma.otp.update({
-      where: { id: otp.id },
-      data: { used: true },
-    });
-
     if (verifyOtpDto.type === OtpType.SIGNUP) {
       const user = await this.prisma.user.findUnique({
         where: { email: verifyOtpDto.email },
       });
 
       if (user) {
-        await this.prisma.user.update({
-          where: { id: user.id },
-          data: { isEmailVerified: true },
-        });
+        await this.prisma.$transaction([
+          this.prisma.otp.update({
+            where: { id: otp.id },
+            data: { used: true },
+          }),
+          this.prisma.user.update({
+            where: { id: user.id },
+            data: { isEmailVerified: true },
+          }),
+        ]);
 
         await this.mailerService.sendWelcomeEmail(user.email, { name: user.fullName || 'User' });
       }
+    } else {
+      await this.prisma.otp.update({
+        where: { id: otp.id },
+        data: { used: true },
+      });
     }
 
     return {
@@ -195,8 +201,6 @@ export class AuthService {
   }
 
   async logout(userId: string, jti: string) {
-    await this.revokeRefreshToken(jti);
-
     await this.prisma.refreshToken.updateMany({
       where: {
         userId,

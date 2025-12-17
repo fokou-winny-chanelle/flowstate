@@ -17,8 +17,8 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Replace API URL in environment.prod.ts
-RUN sed -i "s|apiUrl: '.*'|apiUrl: '${API_URL}'|g" apps/frontend/src/environments/environment.prod.ts
+# Replace API URL in environment.prod.ts using Node.js
+RUN node -e "const fs = require('fs'); const file = 'apps/frontend/src/environments/environment.prod.ts'; const content = fs.readFileSync(file, 'utf8'); const updated = content.replace(/apiUrl: '[^']*'/, \"apiUrl: '${API_URL}'\"); fs.writeFileSync(file, updated);"
 
 # Build the frontend application
 RUN npx nx build frontend --configuration=production

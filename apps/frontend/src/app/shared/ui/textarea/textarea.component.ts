@@ -235,8 +235,12 @@ export class TextareaComponent implements ControlValueAccessor {
   focused = false;
   computedHeight = 100;
 
-  private onChange: (value: string) => void = () => {};
-  private onTouched: () => void = () => {};
+  private onChange: (value: string) => void = () => {
+    // ControlValueAccessor interface requirement - implemented via registerOnChange
+  };
+  private onTouched: () => void = () => {
+    // ControlValueAccessor interface requirement - implemented via registerOnTouched
+  };
 
   onInput(event: Event) {
     const value = (event.target as HTMLTextAreaElement).value;

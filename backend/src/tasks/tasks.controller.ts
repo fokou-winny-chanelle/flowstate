@@ -1,28 +1,29 @@
 import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Patch,
-  Post,
-  Query,
-  UseGuards,
+    Body,
+    Controller,
+    Delete,
+    Get,
+    Param,
+    Patch,
+    Post,
+    Query,
+    UseGuards,
 } from '@nestjs/common';
 import {
-  ApiOperation,
-  ApiResponse,
-  ApiTags,
-  ApiBearerAuth,
+    ApiBearerAuth,
+    ApiOperation,
+    ApiResponse,
+    ApiTags,
 } from '@nestjs/swagger';
-import { CreateTaskDto } from './dto/create-task.dto';
-import { UpdateTaskDto } from './dto/update-task.dto';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateTaskFromNlpDto } from './dto/create-task-from-nlp.dto';
+import { CreateTaskDto } from './dto/create-task.dto';
 import { SnoozeTaskDto } from './dto/snooze-task.dto';
+import { TaskStatsDto } from './dto/task-stats.dto';
+import { UpdateTaskDto } from './dto/update-task.dto';
 import { TaskEntity } from './entities/task.entity';
 import { TasksService } from './tasks.service';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @ApiTags('tasks')
 @Controller('tasks')
@@ -103,6 +104,18 @@ export class TasksController {
     }
 
     return this.tasksService.findAll(user.id, filters);
+  }
+
+  @Get('stats')
+  @ApiOperation({ summary: 'Get task statistics for the current user' })
+  @ApiResponse({
+    status: 200,
+    description: 'Task statistics.',
+    type: TaskStatsDto,
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  getStats(@CurrentUser() user: { id: string }): Promise<TaskStatsDto> {
+    return this.tasksService.getStats(user.id);
   }
 
   @Get('today')

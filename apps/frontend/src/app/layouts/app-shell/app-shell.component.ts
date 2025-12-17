@@ -238,7 +238,13 @@ import { LogoComponent } from '../../shared/ui/logo/logo.component';
       </div>
 
       @if (mobileSidebarOpen()) {
-        <div class="mobile-overlay" (click)="closeMobileSidebar()"></div>
+        <div 
+          class="mobile-overlay" 
+          (click)="closeMobileSidebar()"
+          (keydown.escape)="closeMobileSidebar()"
+          role="button"
+          tabindex="0"
+          [attr.aria-label]="'Close sidebar'"></div>
       }
     </div>
   `,

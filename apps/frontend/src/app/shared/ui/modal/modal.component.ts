@@ -1,26 +1,31 @@
 import { CommonModule } from '@angular/common';
 import {
-    Component,
-    effect,
-    EventEmitter,
-    Input,
-    Output,
-    signal,
-    WritableSignal,
+  Component,
+  effect,
+  EventEmitter,
+  Input,
+  Output,
+  signal,
+  WritableSignal,
 } from '@angular/core';
-import { ButtonComponent } from '../button/button.component';
 
 @Component({
   selector: 'flow-modal',
   standalone: true,
-  imports: [CommonModule, ButtonComponent],
+  imports: [CommonModule],
   template: `
     @if (_isOpen()) {
-      <div class="modal-overlay" (click)="handleOverlayClick($event)">
+      <div 
+        class="modal-overlay" 
+        (click)="handleOverlayClick($event)"
+        (keydown.escape)="close()"
+        role="dialog"
+        aria-modal="true"
+        [attr.aria-labelledby]="title ? 'modal-title' : null">
         <div class="modal-container" [class]="'size-' + size" (click)="$event.stopPropagation()">
           <div class="modal-header">
             @if (title) {
-              <h2 class="modal-title">{{ title }}</h2>
+              <h2 class="modal-title" id="modal-title">{{ title }}</h2>
             }
             <ng-content select="[modal-header]"></ng-content>
             <button
@@ -86,6 +91,8 @@ import { ButtonComponent } from '../button/button.component';
         box-shadow: var(--shadow-lg);
         max-width: 90vw;
         max-height: 90vh;
+        min-height: 200px;
+        width: 100%;
         display: flex;
         flex-direction: column;
         animation: slideUp 0.3s ease-out;
@@ -106,21 +113,25 @@ import { ButtonComponent } from '../button/button.component';
       .modal-container.size-sm {
         width: 100%;
         max-width: 400px;
+        min-height: 300px;
       }
 
       .modal-container.size-md {
         width: 100%;
         max-width: 600px;
+        min-height: 630px;
       }
 
       .modal-container.size-lg {
         width: 100%;
         max-width: 800px;
+        min-height: 500px;
       }
 
       .modal-container.size-xl {
         width: 100%;
         max-width: 1000px;
+        min-height: 600px;
       }
 
       .modal-container.size-full {
@@ -167,7 +178,9 @@ import { ButtonComponent } from '../button/button.component';
       .modal-body {
         padding: var(--space-lg);
         overflow-y: auto;
-        flex: 1;
+        flex: 1 1 auto;
+        min-height: 400px;
+        display: block;
       }
 
       .modal-footer {

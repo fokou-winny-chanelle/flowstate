@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import {
     ChangeDetectionStrategy,
     Component,
+    inject,
     Input,
 } from '@angular/core';
 import { ValidationService } from '../../../core/services/validation.service';
@@ -96,10 +97,10 @@ import { ValidationService } from '../../../core/services/validation.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PasswordStrengthComponent {
+  private validationService = inject(ValidationService);
+  
   @Input() password = '';
   @Input() showLabel = true;
-
-  constructor(private validationService: ValidationService) {}
 
   get strength(): 'weak' | 'medium' | 'strong' {
     return this.validationService.getPasswordStrength(this.password);

@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+import { inject, Injectable, signal } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs';
 
@@ -14,6 +14,8 @@ export interface NavItem {
   providedIn: 'root',
 })
 export class NavigationService {
+  private router = inject(Router);
+  
   activeRoute = signal<string>('');
   navItems = signal<NavItem[]>([
     {
@@ -53,7 +55,7 @@ export class NavigationService {
     },
   ]);
 
-  constructor(private router: Router) {
+  constructor() {
     this.router.events
       .pipe(filter((event) => event instanceof NavigationEnd))
       .subscribe((event) => {

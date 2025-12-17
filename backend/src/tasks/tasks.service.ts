@@ -3,6 +3,7 @@ import { GoalsService } from '../goals/goals.service';
 import { NlpService } from '../nlp/nlp.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTaskDto } from './dto/create-task.dto';
+import { TaskStatsDto } from './dto/task-stats.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { TaskEntity } from './entities/task.entity';
 
@@ -211,10 +212,17 @@ export class TasksService {
         userId,
         deletedAt: null,
         isCompleted: false,
-        dueDate: {
-          gte: today,
-          lt: tomorrow,
-        },
+        OR: [
+          {
+            dueDate: {
+              gte: today,
+              lt: tomorrow,
+            },
+          },
+          {
+            dueDate: null,
+          },
+        ],
       },
       orderBy: {
         priority: 'desc',
@@ -445,6 +453,110 @@ export class TasksService {
       goalId: task.goalId,
       estimatedDuration: task.estimatedDuration,
       energyLevel: task.energyLevel as 'low' | 'medium' | 'high' | undefined,
+    };
+  }
+
+  async getStats(userId: string): Promise<TaskStatsDto> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const [
+      total,
+      completed,
+      active,
+      overdue,
+      todayTasks,
+      upcoming,
+      noDate,
+      highPriority,
+      allTasks,
+    ] = await Promise.all([
+      this.prisma.task.count({
+        where: { userId, deletedAt: null },
+      }),
+      this.prisma.task.count({
+        where: { userId, deletedAt: null, isCompleted: true },
+      }),
+      this.prisma.task.count({
+        where: { userId, deletedAt: null, isCompleted: false },
+      }),
+      this.prisma.task.count({
+        where: {
+          userId,
+          deletedAt: null,
+          isCompleted: false,
+          dueDate: { lt: today },
+        },
+      }),
+      this.prisma.task.count({
+        where: {
+          userId,
+          deletedAt: null,
+          isCompleted: false,
+          OR: [
+            { dueDate: { gte: today, lt: tomorrow } },
+            { dueDate: null },
+          ],
+        },
+      }),
+      this.prisma.task.count({
+        where: {
+          userId,
+          deletedAt: null,
+          isCompleted: false,
+          dueDate: { gte: tomorrow },
+        },
+      }),
+      this.prisma.task.count({
+        where: {
+          userId,
+          deletedAt: null,
+          isCompleted: false,
+          dueDate: null,
+        },
+      }),
+      this.prisma.task.count({
+        where: {
+          userId,
+          deletedAt: null,
+          isCompleted: false,
+          priority: 1,
+        },
+      }),
+      this.prisma.task.findMany({
+        where: { userId, deletedAt: null },
+        select: { priority: true, energyLevel: true, isCompleted: true },
+      }),
+    ]);
+
+    const byPriority: { [key: number]: number } = {};
+    const byEnergyLevel = { low: 0, medium: 0, high: 0 };
+
+    allTasks.forEach((task) => {
+      if (task.priority !== null) {
+        byPriority[task.priority] = (byPriority[task.priority] || 0) + 1;
+      }
+      if (task.energyLevel) {
+        byEnergyLevel[task.energyLevel as keyof typeof byEnergyLevel]++;
+      }
+    });
+
+    const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+    return {
+      total,
+      completed,
+      active,
+      overdue,
+      today: todayTasks,
+      upcoming,
+      noDate,
+      highPriority,
+      byPriority,
+      byEnergyLevel,
+      completionRate,
     };
   }
 }

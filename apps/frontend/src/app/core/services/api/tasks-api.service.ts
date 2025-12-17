@@ -7,6 +7,7 @@ import {
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { Task } from '../../models/types';
+import { AuthService } from '../auth.service';
 import { QueryClientService } from '../query-client.service';
 
 export interface CreateTaskDto {
@@ -31,10 +32,31 @@ export interface TaskFilters {
   energyLevel?: string;
 }
 
+export interface TaskStats {
+  total: number;
+  completed: number;
+  active: number;
+  overdue: number;
+  today: number;
+  upcoming: number;
+  noDate: number;
+  highPriority: number;
+  byPriority: {
+    [key: number]: number;
+  };
+  byEnergyLevel: {
+    low: number;
+    medium: number;
+    high: number;
+  };
+  completionRate: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class TasksApiService {
   private http = inject(HttpClient);
   private queryClient = inject(QueryClientService).getClient();
+  private authService = inject(AuthService);
   private apiUrl = `${environment.apiUrl}/tasks`;
 
   getTasks(filters?: TaskFilters) {
@@ -52,6 +74,15 @@ export class TasksApiService {
 
         return firstValueFrom(this.http.get<Task[]>(this.apiUrl, { params }));
       },
+      enabled: !!this.authService.getAccessToken(),
+    }));
+  }
+
+  getTaskStats() {
+    return injectQuery(() => ({
+      queryKey: ['tasks', 'stats'],
+      queryFn: () => firstValueFrom(this.http.get<TaskStats>(`${this.apiUrl}/stats`)),
+      enabled: !!this.authService.getAccessToken(),
     }));
   }
 
@@ -117,7 +148,45 @@ export class TasksApiService {
     return injectMutation(() => ({
       mutationFn: ({ id, data }: { id: string; data: Partial<CreateTaskDto> }) =>
         firstValueFrom(this.http.patch<Task>(`${this.apiUrl}/${id}`, data)),
+      onMutate: async ({ id, data }) => {
+        // Cancel outgoing refetches
+        await queryClient.cancelQueries({ queryKey: ['tasks'] });
+        
+        // Snapshot previous values
+        const previousAllTasks = queryClient.getQueryData<Task[]>(['tasks', 'all']);
+        const previousTodayTasks = queryClient.getQueryData<Task[]>(['tasks', 'today']);
+        
+        // Optimistically update the cache
+        if (previousAllTasks) {
+          queryClient.setQueryData<Task[]>(
+            ['tasks', 'all'],
+            previousAllTasks.map((t) =>
+              t.id === id ? { ...t, ...data } : t
+            )
+          );
+        }
+        if (previousTodayTasks) {
+          queryClient.setQueryData<Task[]>(
+            ['tasks', 'today'],
+            previousTodayTasks.map((t) =>
+              t.id === id ? { ...t, ...data } : t
+            )
+          );
+        }
+        
+        return { previousAllTasks, previousTodayTasks };
+      },
+      onError: (_, __, context) => {
+        // Rollback on error
+        if (context?.previousAllTasks) {
+          queryClient.setQueryData(['tasks', 'all'], context.previousAllTasks);
+        }
+        if (context?.previousTodayTasks) {
+          queryClient.setQueryData(['tasks', 'today'], context.previousTodayTasks);
+        }
+      },
       onSuccess: () => {
+        // Invalidate to refetch and ensure consistency
         queryClient.invalidateQueries({ queryKey: ['tasks'] });
       },
     }));

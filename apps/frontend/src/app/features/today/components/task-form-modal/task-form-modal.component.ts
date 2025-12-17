@@ -5,8 +5,10 @@ import {
   EventEmitter,
   inject,
   Input,
+  OnChanges,
   Output,
   signal,
+  SimpleChanges
 } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Task } from '../../../../core/models/types';
@@ -107,7 +109,7 @@ import { TextareaComponent } from '../../../../shared/ui/textarea/textarea.compo
             (blur)="handleTagsBlur()" />
           @if (tagsArray().length > 0) {
             <div class="tags-preview">
-              @for (tag of tagsArray(); track tag) {
+              @for (tag of tagsArray(); track $index) {
                 <flow-badge variant="default" size="sm">{{ tag }}</flow-badge>
               }
             </div>
@@ -146,12 +148,19 @@ import { TextareaComponent } from '../../../../shared/ui/textarea/textarea.compo
         display: flex;
         flex-direction: column;
         gap: var(--space-lg);
+        width: 100%;
+        height: 100%;
+        flex: 1;
       }
 
       .form-group {
         display: flex;
         flex-direction: column;
         gap: var(--space-xs);
+      }
+
+      .form-group.tags-group {
+        gap: var(--space-sm);
       }
 
       .form-row {
@@ -189,8 +198,15 @@ import { TextareaComponent } from '../../../../shared/ui/textarea/textarea.compo
       .tags-preview {
         display: flex;
         flex-wrap: wrap;
-        gap: var(--space-xs);
-        margin-top: var(--space-xs);
+        gap: var(--space-sm);
+        margin-top: var(--space-md);
+        align-items: flex-start;
+        width: 100%;
+      }
+
+      .tags-preview flow-badge {
+        display: inline-flex;
+        flex-shrink: 0;
       }
 
       .form-actions {
@@ -217,13 +233,25 @@ import { TextareaComponent } from '../../../../shared/ui/textarea/textarea.compo
     `,
   ],
 })
-export class TaskFormModalComponent {
+export class TaskFormModalComponent implements OnChanges {
   private fb = inject(FormBuilder);
   private tasksApi = inject(TasksApiService);
 
   @Input() task?: Task;
   @Input() set isOpen(value: boolean) {
+    const wasOpen = this._isOpen();
     this._isOpen.set(value);
+    
+    if (value && !wasOpen) {
+      // Modal is opening
+      if (this.task) {
+        // Populate form when modal opens with a task
+        setTimeout(() => this.populateForm(), 0);
+      } else {
+        // Reset form when modal opens without a task (new task)
+        setTimeout(() => this.resetForm(), 0);
+      }
+    }
   }
   protected _isOpen = signal(false);
   @Output() closed = new EventEmitter<void>();
@@ -233,6 +261,9 @@ export class TaskFormModalComponent {
   isSubmitting = signal(false);
   errorMessage = signal<string | null>(null);
   tagsArray = signal<string[]>([]);
+  
+  private createMutation = this.tasksApi.createTask();
+  private updateMutation = this.tasksApi.updateTask();
 
   constructor() {
     this.taskForm = this.fb.group({
@@ -257,35 +288,75 @@ export class TaskFormModalComponent {
       }
     });
 
+    // Watch for modal opening/closing and task changes
     effect(() => {
-      if (this._isOpen()) {
-        if (this.task) {
-          this.populateForm();
+      const isOpen = this._isOpen();
+      const currentTask = this.task;
+      
+      if (isOpen) {
+        // Modal is opening - populate or reset form
+        if (currentTask) {
+          // Use setTimeout to ensure form is ready
+          setTimeout(() => this.populateForm(), 0);
         } else {
-          this.resetForm();
+          setTimeout(() => this.resetForm(), 0);
         }
       }
     });
   }
 
+  ngOnChanges(changes: SimpleChanges): void {
+    // When task changes while modal is open, update the form
+    if (changes['task'] && this._isOpen()) {
+      if (this.task) {
+        setTimeout(() => this.populateForm(), 0);
+      } else {
+        setTimeout(() => this.resetForm(), 0);
+      }
+    }
+  }
+
   populateForm() {
-    if (!this.task) return;
+    if (!this.task) {
+      this.resetForm();
+      return;
+    }
 
-    const dueDate = this.task.dueDate
-      ? new Date(this.task.dueDate).toISOString().slice(0, 16)
-      : '';
+    // Format dueDate for datetime-local input (YYYY-MM-DDTHH:mm)
+    let dueDate = '';
+    if (this.task.dueDate) {
+      try {
+        const date = new Date(this.task.dueDate);
+        if (!isNaN(date.getTime())) {
+          // Get local date string in format YYYY-MM-DDTHH:mm
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          const hours = String(date.getHours()).padStart(2, '0');
+          const minutes = String(date.getMinutes()).padStart(2, '0');
+          dueDate = `${year}-${month}-${day}T${hours}:${minutes}`;
+        }
+      } catch (e) {
+        console.warn('Error parsing dueDate:', e);
+      }
+    }
 
+    // Populate all form fields
     this.taskForm.patchValue({
-      title: this.task.title,
+      title: this.task.title || '',
       description: this.task.description || '',
       dueDate: dueDate,
-      priority: this.task.priority || null,
-      energyLevel: this.task.energyLevel || null,
-      estimatedDuration: this.task.estimatedDuration || null,
-      tags: this.task.tags?.join(', ') || '',
-    });
+      priority: this.task.priority ?? null,
+      energyLevel: this.task.energyLevel ?? null,
+      estimatedDuration: this.task.estimatedDuration ?? null,
+      tags: this.task.tags && this.task.tags.length > 0 ? this.task.tags.join(', ') : '',
+    }, { emitEvent: false });
 
+    // Update tags array
     this.tagsArray.set(this.task.tags || []);
+    
+    // Clear any previous error messages
+    this.errorMessage.set(null);
   }
 
   resetForm() {
@@ -352,8 +423,7 @@ export class TaskFormModalComponent {
     };
 
     if (this.task) {
-      const updateMutation = this.tasksApi.updateTask();
-      updateMutation.mutate(
+      this.updateMutation.mutate(
         { id: this.task.id, data: taskData },
         {
           onSuccess: (updatedTask) => {
@@ -361,27 +431,28 @@ export class TaskFormModalComponent {
             this.saved.emit(updatedTask);
             this.handleClose();
           },
-          onError: (error: any) => {
+          onError: (error: unknown) => {
             this.isSubmitting.set(false);
-            this.errorMessage.set(
-              error?.error?.message || 'Failed to update task. Please try again.'
-            );
+            const errorMessage = error && typeof error === 'object' && 'error' in error
+              ? (error.error as { message?: string })?.message || 'Failed to update task. Please try again.'
+              : 'Failed to update task. Please try again.';
+            this.errorMessage.set(errorMessage);
           },
         }
       );
     } else {
-      const createMutation = this.tasksApi.createTask();
-      createMutation.mutate(taskData, {
+      this.createMutation.mutate(taskData, {
         onSuccess: (newTask) => {
           this.isSubmitting.set(false);
           this.saved.emit(newTask);
           this.handleClose();
         },
-        onError: (error: any) => {
+        onError: (error: unknown) => {
           this.isSubmitting.set(false);
-          this.errorMessage.set(
-            error?.error?.message || 'Failed to create task. Please try again.'
-          );
+          const errorMessage = error && typeof error === 'object' && 'error' in error
+            ? (error.error as { message?: string })?.message || 'Failed to create task. Please try again.'
+            : 'Failed to create task. Please try again.';
+          this.errorMessage.set(errorMessage);
         },
       });
     }

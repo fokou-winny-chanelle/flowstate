@@ -181,8 +181,12 @@ export class OtpInputComponent implements ControlValueAccessor {
   inputIds = Array.from({ length: 6 }, (_, i) => `${this.otpId}-${i}`);
   focusedIndex = -1;
 
-  private onChange: (value: string) => void = () => {};
-  private onTouched: () => void = () => {};
+  private onChange: (value: string) => void = () => {
+    // ControlValueAccessor interface requirement - implemented via registerOnChange
+  };
+  private onTouched: () => void = () => {
+    // ControlValueAccessor interface requirement - implemented via registerOnTouched
+  };
 
   onInput(event: Event, index: number) {
     const input = event.target as HTMLInputElement;
@@ -222,8 +226,9 @@ export class OtpInputComponent implements ControlValueAccessor {
     digits.split('').forEach((digit, i) => {
       if (i < this.length) {
         this.digits[i] = digit;
-        if (this.inputRefs?.get(i)?.nativeElement) {
-          this.inputRefs.get(i)!.nativeElement.value = digit;
+        const inputElement = this.inputRefs?.get(i)?.nativeElement;
+        if (inputElement) {
+          inputElement.value = digit;
         }
       }
     });

@@ -63,8 +63,7 @@ Ce guide vous accompagne étape par étape pour déployer FlowState sur Render.c
    NODE_ENV = production
    PORT = 3000
    DATABASE_URL = [Collez l'Internal Database URL de l'étape 2]
-   REDIS_HOST = [Nous créerons Redis après]
-   REDIS_PORT = 6379
+   REDIS_URL = [Nous créerons Redis à l'étape 4 - laissez vide pour l'instant]
    JWT_SECRET = [Votre JWT_SECRET du .env]
    JWT_REFRESH_SECRET = [Votre JWT_REFRESH_SECRET du .env]
    JWT_ACCESS_EXPIRES_IN = 15m
@@ -74,6 +73,8 @@ Ce guide vous accompagne étape par étape pour déployer FlowState sur Render.c
    APP_NAME = FlowState
    FRONTEND_URL = [Nous mettrons à jour après avoir déployé le frontend]
    ```
+   
+   **Note**: Pour Redis, vous pouvez utiliser soit `REDIS_URL` (recommandé pour Render), soit `REDIS_HOST`/`REDIS_PORT`. Nous configurerons `REDIS_URL` à l'étape 4.
 
    **Important**: Pour `DATABASE_URL`, utilisez l'**Internal Database URL** de Render, pas l'External.
 
@@ -81,21 +82,65 @@ Ce guide vous accompagne étape par étape pour déployer FlowState sur Render.c
 7. Le build va commencer automatiquement (5-10 minutes la première fois)
 8. **Notez l'URL du service** qui sera générée (ex: `https://flowstate-backend.onrender.com`)
 
-## Étape 4: Créer Redis (Optionnel mais Recommandé)
+## Étape 4: Créer Redis (Key Value) - REQUIS
 
-1. Dans le dashboard Render, cliquez sur "New +"
-2. Sélectionnez "Redis"
-3. Remplissez:
-   - **Name**: `flowstate-redis`
-   - **Region**: Même région que les autres services
-   - **Plan**: Free
-4. Cliquez sur "Create Redis"
-5. Une fois créé, cliquez sur votre Redis
-6. **Copiez l'Internal Redis URL** (ex: `redis://red-xxxxx:6379`)
-7. Retournez à votre service backend
-8. Cliquez sur "Environment" dans le menu de gauche
-9. Mettez à jour `REDIS_HOST` avec l'hostname de Redis (ex: `red-xxxxx`)
-10. Cliquez sur "Save Changes" - le service va redémarrer automatiquement
+**Important**: Redis est requis pour la queue d'emails. Sans Redis, les emails ne seront pas envoyés.
+
+### 4.1: Créer l'instance Redis (Key Value)
+
+1. Dans le dashboard Render, cliquez sur **"New +"** (en haut à droite)
+2. Dans le menu déroulant, sélectionnez **"Key Value"** (c'est le nom officiel de Redis sur Render)
+3. Remplissez le formulaire:
+   - **Name**: `flowstate-redis` (ou un nom de votre choix)
+   - **Region**: **IMPORTANT** - Choisissez la **même région** que votre backend et PostgreSQL
+     - Cela permet une communication gratuite et rapide entre les services
+   - **Plan**: Sélectionnez **"Free"** (pour les tests) ou un plan payant si vous avez besoin de persistance des données
+4. Cliquez sur **"Create Key Value"**
+5. ⏱️ **Attendez 1-2 minutes** que Redis soit créé et configuré
+
+### 4.2: Récupérer l'URL de connexion Redis
+
+1. Une fois créé, cliquez sur votre instance Redis (`flowstate-redis`)
+2. Allez dans l'onglet **"Info"** (ou **"Connect"**)
+3. **Copiez l'Internal Redis URL** - elle ressemble à :
+   - `redis://red-xxxxxxxxxxxxxxxxxxxx:6379`
+   - ⚠️ **Utilisez l'Internal Redis URL**, pas l'External !
+   - ⚠️ Notez que sur Render, l'URL peut aussi être au format `redis://red-xxxxx` (sans le port, le port 6379 est implicite)
+
+### 4.3: Configurer Redis dans le Backend
+
+1. Retournez à votre service backend (`flowstate-backend`) sur Render
+2. Cliquez sur **"Environment"** dans le menu de gauche
+3. Vous avez **deux options** pour configurer Redis :
+
+   **Option A (Recommandée) - Utiliser REDIS_URL :**
+   - Cliquez sur **"Add Environment Variable"** (si `REDIS_URL` n'existe pas)
+   - **Key**: `REDIS_URL`
+   - **Value**: Collez l'Internal Redis URL copiée à l'étape 4.2 (ex: `redis://red-xxxxxxxxxxxxxxxxxxxx:6379`)
+   - Cliquez sur **"Save"**
+
+   **Option B - Utiliser REDIS_HOST et REDIS_PORT :**
+   - Trouvez `REDIS_HOST` dans la liste des variables
+   - Mettez à jour la valeur avec l'hostname de Redis (ex: `red-xxxxxxxxxxxxxxxxxxxx`)
+     - Pour extraire l'hostname : si l'URL est `redis://red-xxxxx:6379`, l'hostname est `red-xxxxx`
+   - Vérifiez que `REDIS_PORT` est défini à `6379`
+   - Cliquez sur **"Save Changes"**
+
+4. ⏱️ Le service backend va **redémarrer automatiquement** avec la nouvelle configuration (1-2 minutes)
+
+### 4.4: Vérifier la connexion Redis
+
+1. Une fois le backend redémarré, allez dans l'onglet **"Logs"** du service backend
+2. Vous devriez voir :
+   - `[PrismaService] Database connected successfully`
+   - `[MailerService] SMTP server ready to send emails`
+   - **Plus d'erreurs** `ECONNREFUSED` ou `Queue error occurred`
+3. Si vous voyez encore des erreurs Redis, vérifiez :
+   - Que `REDIS_URL` (ou `REDIS_HOST`/`REDIS_PORT`) est correctement configuré
+   - Que Redis et le backend sont dans la **même région**
+   - Que vous utilisez l'**Internal Redis URL**, pas l'External
+
+**✅ Redis est maintenant configuré et la queue d'emails devrait fonctionner correctement !**
 
 ## Étape 5: Déployer le Frontend (Static Site)
 

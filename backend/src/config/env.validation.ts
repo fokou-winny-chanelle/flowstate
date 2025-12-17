@@ -43,7 +43,10 @@ export const validationSchema = Joi.object({
   
   FRONTEND_URL: Joi.string().uri().default('http://localhost:4200'),
   
+  // Redis configuration - support both REDIS_URL (Render format) and REDIS_HOST/REDIS_PORT (local/Docker)
+  REDIS_URL: Joi.string().uri().allow('').optional(),
   REDIS_HOST: Joi.string().allow('').default('localhost'),
   REDIS_PORT: Joi.number().integer().default(6379),
+  REDIS_PASSWORD: Joi.string().allow('').optional(),
 }).options({ convert: true, allowUnknown: true });
 

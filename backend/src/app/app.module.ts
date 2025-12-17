@@ -1,22 +1,22 @@
+import { BullModule } from '@nestjs/bull';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import { BullModule } from '@nestjs/bull';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { PrismaModule } from '../prisma/prisma.module';
-import { TasksModule } from '../tasks/tasks.module';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AuthModule } from '../auth/auth.module';
-import { ProjectsModule } from '../projects/projects.module';
+import { validationSchema } from '../config/env.validation';
+import { HttpExceptionFilter } from '../core/filters/http-exception.filter';
+import { EmailQueueModule } from '../email-queue/email-queue.module';
+import { FocusSessionsModule } from '../focus-sessions/focus-sessions.module';
 import { GoalsModule } from '../goals/goals.module';
 import { HabitsModule } from '../habits/habits.module';
-import { FocusSessionsModule } from '../focus-sessions/focus-sessions.module';
-import { EmailQueueModule } from '../email-queue/email-queue.module';
-import { SchedulerModule } from '../scheduler/scheduler.module';
 import { HealthModule } from '../health/health.module';
-import { HttpExceptionFilter } from '../core/filters/http-exception.filter';
-import { validationSchema } from '../config/env.validation';
+import { PrismaModule } from '../prisma/prisma.module';
+import { ProjectsModule } from '../projects/projects.module';
+import { SchedulerModule } from '../scheduler/scheduler.module';
+import { TasksModule } from '../tasks/tasks.module';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 
 @Module({
   imports: [
@@ -27,19 +27,47 @@ import { validationSchema } from '../config/env.validation';
     BullModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
-        const redisHost = configService.get<string>('REDIS_HOST') || 'localhost';
-        const redisPort = configService.get<number>('REDIS_PORT') || 6379;
+        // Support both REDIS_URL (Render format) and REDIS_HOST/REDIS_PORT (local/Docker)
+        const redisUrl = configService.get<string>('REDIS_URL');
         
-        return {
-          redis: {
-            host: redisHost,
-            port: redisPort,
+        if (redisUrl) {
+          // Use Redis URL if provided (Render.com format: redis://host:port or redis://user:pass@host:port)
+          return {
+            redis: redisUrl,
             retryStrategy: (times: number) => {
               const delay = Math.min(times * 50, 2000);
               return delay;
             },
             maxRetriesPerRequest: 3,
+            defaultJobOptions: {
+              removeOnComplete: 100,
+              removeOnFail: 1000,
+            },
+          };
+        }
+        
+        // Fallback to host/port format (local development or Docker)
+        const redisHost = configService.get<string>('REDIS_HOST') || 'localhost';
+        const redisPort = configService.get<number>('REDIS_PORT') || 6379;
+        const redisPassword = configService.get<string>('REDIS_PASSWORD');
+        
+        const redisConfig: any = {
+          host: redisHost,
+          port: redisPort,
+          retryStrategy: (times: number) => {
+            const delay = Math.min(times * 50, 2000);
+            return delay;
           },
+          maxRetriesPerRequest: 3,
+        };
+        
+        // Add password if provided
+        if (redisPassword) {
+          redisConfig.password = redisPassword;
+        }
+        
+        return {
+          redis: redisConfig,
           defaultJobOptions: {
             removeOnComplete: 100,
             removeOnFail: 1000,

@@ -103,31 +103,31 @@ export class EmailQueueService {
     try {
       switch (job.type) {
         case EmailJobType.OTP:
-          await this.mailerService.sendOtpEmail(job.to, job.context as OtpEmailContext);
+          await this.mailerService.sendOtpEmail(job.to, job.context as unknown as OtpEmailContext);
           break;
         case EmailJobType.WELCOME:
-          await this.mailerService.sendWelcomeEmail(job.to, job.context as WelcomeEmailContext);
+          await this.mailerService.sendWelcomeEmail(job.to, job.context as unknown as WelcomeEmailContext);
           break;
         case EmailJobType.PASSWORD_RESET:
-          await this.mailerService.sendPasswordResetEmail(job.to, job.context as PasswordResetEmailContext);
+          await this.mailerService.sendPasswordResetEmail(job.to, job.context as unknown as PasswordResetEmailContext);
           break;
         case EmailJobType.GOAL_MILESTONE:
-          await this.mailerService.sendGoalMilestoneEmail(job.to, job.context as GoalMilestoneEmailContext);
+          await this.mailerService.sendGoalMilestoneEmail(job.to, job.context as unknown as GoalMilestoneEmailContext);
           break;
         case EmailJobType.STREAK_MILESTONE:
-          await this.mailerService.sendStreakMilestoneEmail(job.to, job.context as StreakMilestoneEmailContext);
+          await this.mailerService.sendStreakMilestoneEmail(job.to, job.context as unknown as StreakMilestoneEmailContext);
           break;
         case EmailJobType.PROJECT_INVITATION:
-          await this.mailerService.sendProjectInvitationEmail(job.to, job.context as ProjectInvitationEmailContext);
+          await this.mailerService.sendProjectInvitationEmail(job.to, job.context as unknown as ProjectInvitationEmailContext);
           break;
         case EmailJobType.TASK_REMINDER:
-          await this.mailerService.sendTaskReminderEmail(job.to, job.context as TaskReminderEmailContext);
+          await this.mailerService.sendTaskReminderEmail(job.to, job.context as unknown as TaskReminderEmailContext);
           break;
         case EmailJobType.OVERDUE_SUMMARY:
-          await this.mailerService.sendOverdueSummaryEmail(job.to, job.context as OverdueSummaryEmailContext);
+          await this.mailerService.sendOverdueSummaryEmail(job.to, job.context as unknown as OverdueSummaryEmailContext);
           break;
         case EmailJobType.FOCUS_REPORT:
-          await this.mailerService.sendFocusReportEmail(job.to, job.context as FocusReportEmailContext);
+          await this.mailerService.sendFocusReportEmail(job.to, job.context as unknown as FocusReportEmailContext);
           break;
         default:
           this.logger.error(`Unknown email job type: ${job.type}`);

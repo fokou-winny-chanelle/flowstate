@@ -31,19 +31,42 @@ import { AppService } from './app.service';
         const redisUrl = configService.get<string>('REDIS_URL');
         
         if (redisUrl) {
-          // Use Redis URL if provided (Render.com format: redis://host:port or redis://user:pass@host:port)
-          return {
-            redis: redisUrl,
-            retryStrategy: (times: number) => {
-              const delay = Math.min(times * 50, 2000);
-              return delay;
-            },
-            maxRetriesPerRequest: 3,
-            defaultJobOptions: {
-              removeOnComplete: 100,
-              removeOnFail: 1000,
-            },
-          };
+          // Parse Redis URL (format: redis://[user:password@]host:port[/db])
+          // Example: redis://red-xxxxx:6379 or redis://user:pass@red-xxxxx:6379
+          try {
+            const url = new URL(redisUrl);
+            const redisConfig: any = {
+              host: url.hostname,
+              port: url.port ? parseInt(url.port, 10) : 6379,
+              retryStrategy: (times: number) => {
+                const delay = Math.min(times * 50, 2000);
+                return delay;
+              },
+              maxRetriesPerRequest: 3,
+            };
+            
+            // Add password if provided in URL
+            if (url.password) {
+              redisConfig.password = url.password;
+            }
+            
+            // Add username if provided (usually not needed for Render)
+            if (url.username && !url.password) {
+              // Some Redis URLs have username without password
+              redisConfig.username = url.username;
+            }
+            
+            return {
+              redis: redisConfig,
+              defaultJobOptions: {
+                removeOnComplete: 100,
+                removeOnFail: 1000,
+              },
+            };
+          } catch (error) {
+            // If URL parsing fails, fall back to host/port format
+            console.warn('Failed to parse REDIS_URL, falling back to REDIS_HOST/REDIS_PORT', error);
+          }
         }
         
         // Fallback to host/port format (local development or Docker)

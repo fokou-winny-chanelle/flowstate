@@ -59,6 +59,7 @@ error.log
 
 # Documentation files (temporary)
 BACKEND_COMPLETION_PLAN.md
+ROADMAP.md
 
 # Nx generated files
 project.json

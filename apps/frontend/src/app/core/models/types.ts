@@ -55,11 +55,13 @@ export interface Habit {
   id: string;
   userId: string;
   goalId?: string;
-  title: string;
-  description?: string;
-  frequency: string;
-  streak: number;
-  bestStreak: number;
+  name: string;
+  schedule: {
+    days: string[];
+    time?: string;
+  };
+  streakCurrent: number;
+  streakBest: number;
   createdAt: Date | string;
   updatedAt: Date | string;
 }

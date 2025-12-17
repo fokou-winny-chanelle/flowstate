@@ -13,13 +13,14 @@ export class GoalsService {
       await this.validateProjectAccess(createGoalDto.projectId, userId);
     }
 
-    // @ts-expect-error - Prisma client types are generated at build time
     const goal = await this.prisma.goal.create({
       data: {
-        ...createGoalDto,
+        title: createGoalDto.title,
+        type: createGoalDto.type,
         userId,
         progress: createGoalDto.progress ?? 0.0,
         targetDate: createGoalDto.targetDate ? new Date(createGoalDto.targetDate) : null,
+        ...(createGoalDto.projectId && { projectId: createGoalDto.projectId }),
       },
     });
 
@@ -27,7 +28,6 @@ export class GoalsService {
   }
 
   async findAll(userId: string): Promise<GoalEntity[]> {
-    // @ts-expect-error - Prisma client types are generated at build time
     const goals = await this.prisma.goal.findMany({
       where: {
         userId,
@@ -41,7 +41,6 @@ export class GoalsService {
   }
 
   async findOne(id: string, userId: string): Promise<GoalEntity> {
-    // @ts-expect-error - Prisma client types are generated at build time
     const goal = await this.prisma.goal.findFirst({
       where: {
         id,
@@ -91,7 +90,6 @@ export class GoalsService {
       updateData.progress = updateGoalDto.progress;
     }
 
-    // @ts-expect-error - Prisma client types are generated at build time
     const goal = await this.prisma.goal.update({
       where: { id },
       data: updateData,
@@ -103,14 +101,12 @@ export class GoalsService {
   async remove(id: string, userId: string): Promise<void> {
     await this.findOne(id, userId);
 
-    // @ts-expect-error - Prisma client types are generated at build time
     await this.prisma.goal.delete({
       where: { id },
     });
   }
 
   async calculateProgress(goalId: string): Promise<number> {
-    // @ts-expect-error - Prisma client types are generated at build time
     const tasks = await this.prisma.task.findMany({
       where: {
         goalId,
@@ -125,7 +121,6 @@ export class GoalsService {
     const completed = tasks.filter((t) => t.isCompleted).length;
     const progress = Math.round((completed / tasks.length) * 100 * 100) / 100;
 
-    // @ts-expect-error - Prisma client types are generated at build time
     await this.prisma.goal.update({
       where: { id: goalId },
       data: { progress },
@@ -145,7 +140,6 @@ export class GoalsService {
 
     await this.findOne(id, userId);
 
-    // @ts-expect-error - Prisma client types are generated at build time
     const goal = await this.prisma.goal.update({
       where: { id },
       data: { progress },
@@ -158,7 +152,6 @@ export class GoalsService {
     await this.findOne(goalId, userId);
     await this.calculateProgress(goalId);
 
-    // @ts-expect-error - Prisma client types are generated at build time
     const goal = await this.prisma.goal.findUnique({
       where: { id: goalId },
     });
@@ -173,7 +166,6 @@ export class GoalsService {
   async getTasks(goalId: string, userId: string) {
     await this.findOne(goalId, userId);
 
-    // @ts-expect-error - Prisma client types are generated at build time
     const tasks = await this.prisma.task.findMany({
       where: {
         goalId,
@@ -199,7 +191,6 @@ export class GoalsService {
   async getHabits(goalId: string, userId: string) {
     await this.findOne(goalId, userId);
 
-    // @ts-expect-error - Prisma client types are generated at build time
     const habits = await this.prisma.habit.findMany({
       where: {
         goalId,
@@ -222,7 +213,6 @@ export class GoalsService {
   }
 
   private async validateProjectAccess(projectId: string, userId: string): Promise<void> {
-    // @ts-expect-error - Prisma client types are generated at build time
     const project = await this.prisma.project.findFirst({
       where: {
         id: projectId,

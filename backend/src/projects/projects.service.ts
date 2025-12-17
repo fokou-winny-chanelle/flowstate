@@ -15,7 +15,6 @@ export class ProjectsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(createProjectDto: CreateProjectDto, userId: string): Promise<ProjectEntity> {
-    // @ts-expect-error - Prisma client types are generated at build time
     const project = await this.prisma.project.create({
       data: {
         ...createProjectDto,
@@ -25,7 +24,6 @@ export class ProjectsService {
       },
     });
 
-    // @ts-expect-error - Prisma client types are generated at build time
     await this.prisma.projectMember.create({
       data: {
         projectId: project.id,
@@ -38,7 +36,6 @@ export class ProjectsService {
   }
 
   async findAll(userId: string): Promise<ProjectEntity[]> {
-    // @ts-expect-error - Prisma client types are generated at build time
     const projects = await this.prisma.project.findMany({
       where: {
         OR: [
@@ -60,7 +57,6 @@ export class ProjectsService {
   }
 
   async findOne(id: string, userId: string): Promise<ProjectEntity> {
-    // @ts-expect-error - Prisma client types are generated at build time
     const project = await this.prisma.project.findFirst({
       where: {
         id,
@@ -110,7 +106,6 @@ export class ProjectsService {
       updateData.deadline = new Date(updateProjectDto.deadline);
     }
 
-    // @ts-expect-error - Prisma client types are generated at build time
     const project = await this.prisma.project.update({
       where: { id },
       data: updateData,
@@ -122,7 +117,6 @@ export class ProjectsService {
   async remove(id: string, userId: string): Promise<void> {
     await this.ensureAccess(id, userId, [ProjectRole.OWNER]);
 
-    // @ts-expect-error - Prisma client types are generated at build time
     await this.prisma.project.update({
       where: { id },
       data: { deletedAt: new Date() },
@@ -136,7 +130,6 @@ export class ProjectsService {
   ): Promise<void> {
     await this.ensureAccess(projectId, userId, [ProjectRole.OWNER, ProjectRole.ADMIN]);
 
-    // @ts-expect-error - Prisma client types are generated at build time
     const user = await this.prisma.user.findUnique({
       where: { email: addMemberDto.email },
     });
@@ -145,7 +138,6 @@ export class ProjectsService {
       throw new NotFoundException(`User with email ${addMemberDto.email} not found`);
     }
 
-    // @ts-expect-error - Prisma client types are generated at build time
     const existing = await this.prisma.projectMember.findUnique({
       where: {
         projectId_userId: {
@@ -159,7 +151,6 @@ export class ProjectsService {
       throw new ConflictException('User is already a member of this project');
     }
 
-    // @ts-expect-error - Prisma client types are generated at build time
     await this.prisma.projectMember.create({
       data: {
         projectId,
@@ -172,7 +163,6 @@ export class ProjectsService {
   async removeMember(projectId: string, memberUserId: string, userId: string): Promise<void> {
     await this.ensureAccess(projectId, userId, [ProjectRole.OWNER, ProjectRole.ADMIN]);
 
-    // @ts-expect-error - Prisma client types are generated at build time
     await this.prisma.projectMember.delete({
       where: {
         projectId_userId: {
@@ -186,7 +176,6 @@ export class ProjectsService {
   async getMembers(projectId: string, userId: string) {
     await this.findOne(projectId, userId);
 
-    // @ts-expect-error - Prisma client types are generated at build time
     const members = await this.prisma.projectMember.findMany({
       where: { projectId },
       include: {
@@ -213,7 +202,6 @@ export class ProjectsService {
   async getTasks(projectId: string, userId: string) {
     await this.findOne(projectId, userId);
 
-    // @ts-expect-error - Prisma client types are generated at build time
     const tasks = await this.prisma.task.findMany({
       where: {
         projectId,
@@ -240,7 +228,6 @@ export class ProjectsService {
   async updateProgress(projectId: string, userId: string): Promise<number> {
     await this.findOne(projectId, userId);
 
-    // @ts-expect-error - Prisma client types are generated at build time
     const tasks = await this.prisma.task.findMany({
       where: {
         projectId,
@@ -250,7 +237,6 @@ export class ProjectsService {
 
     if (tasks.length === 0) {
       const progress = 0;
-      // @ts-expect-error - Prisma client types are generated at build time
       await this.prisma.project.update({
         where: { id: projectId },
         data: { progress },
@@ -261,7 +247,6 @@ export class ProjectsService {
     const completed = tasks.filter((t) => t.isCompleted).length;
     const progress = Math.round((completed / tasks.length) * 100 * 100) / 100;
 
-    // @ts-expect-error - Prisma client types are generated at build time
     await this.prisma.project.update({
       where: { id: projectId },
       data: { progress },
@@ -275,7 +260,6 @@ export class ProjectsService {
     userId: string,
     allowedRoles: ProjectRole[],
   ): Promise<void> {
-    // @ts-expect-error - Prisma client types are generated at build time
     const project = await this.prisma.project.findUnique({
       where: { id: projectId },
       include: {

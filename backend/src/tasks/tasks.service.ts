@@ -67,7 +67,6 @@ export class TasksService {
       taskData.energyLevel = createTaskDto.energyLevel;
     }
 
-    // @ts-expect-error - Prisma client types are generated at build time
     const task = await this.prisma.task.create({
       data: taskData,
     });
@@ -124,7 +123,6 @@ export class TasksService {
       taskData.metadata = { recurrence: parsed.recurrence };
     }
 
-    // @ts-expect-error - Prisma client types are generated at build time
     const task = await this.prisma.task.create({
       data: taskData,
     });
@@ -192,7 +190,6 @@ export class TasksService {
       where.energyLevel = filters.energyLevel;
     }
 
-    // @ts-expect-error - Prisma client types are generated at build time
     const tasks = await this.prisma.task.findMany({
       where,
       orderBy: {
@@ -209,7 +206,6 @@ export class TasksService {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    // @ts-expect-error - Prisma client types are generated at build time
     const tasks = await this.prisma.task.findMany({
       where: {
         userId,
@@ -233,7 +229,6 @@ export class TasksService {
     const future = new Date();
     future.setDate(future.getDate() + days);
 
-    // @ts-expect-error - Prisma client types are generated at build time
     const tasks = await this.prisma.task.findMany({
       where: {
         userId,
@@ -253,7 +248,6 @@ export class TasksService {
   }
 
   async findOne(id: string, userId: string): Promise<TaskEntity> {
-    // @ts-expect-error - Prisma client types are generated at build time
     const task = await this.prisma.task.findFirst({
       where: {
         id,
@@ -328,12 +322,10 @@ export class TasksService {
       updateData.energyLevel = updateTaskDto.energyLevel;
     }
 
-    // @ts-expect-error - Prisma client types are generated at build time
     const oldTask = await this.prisma.task.findUnique({
       where: { id },
     });
 
-    // @ts-expect-error - Prisma client types are generated at build time
     const task = await this.prisma.task.update({
       where: { id },
       data: updateData,
@@ -350,7 +342,6 @@ export class TasksService {
   async remove(id: string, userId: string): Promise<void> {
     const task = await this.findOne(id, userId);
 
-    // @ts-expect-error - Prisma client types are generated at build time
     await this.prisma.task.update({
       where: { id },
       data: { deletedAt: new Date() },
@@ -364,7 +355,6 @@ export class TasksService {
   async complete(id: string, userId: string): Promise<TaskEntity> {
     const task = await this.findOne(id, userId);
 
-    // @ts-expect-error - Prisma client types are generated at build time
     const updated = await this.prisma.task.update({
       where: { id },
       data: { isCompleted: true },
@@ -384,7 +374,6 @@ export class TasksService {
       throw new BadRequestException('Snooze date must be in the future');
     }
 
-    // @ts-expect-error - Prisma client types are generated at build time
     const updated = await this.prisma.task.update({
       where: { id },
       data: { dueDate: until },
@@ -394,7 +383,6 @@ export class TasksService {
   }
 
   private async validateProjectAccess(projectId: string, userId: string): Promise<void> {
-    // @ts-expect-error - Prisma client types are generated at build time
     const project = await this.prisma.project.findFirst({
       where: {
         id: projectId,
@@ -416,7 +404,6 @@ export class TasksService {
   }
 
   private async validateGoalAccess(goalId: string, userId: string): Promise<void> {
-    // @ts-expect-error - Prisma client types are generated at build time
     const goal = await this.prisma.goal.findFirst({
       where: {
         id: goalId,

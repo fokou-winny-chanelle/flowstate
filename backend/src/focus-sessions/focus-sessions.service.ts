@@ -20,7 +20,6 @@ export class FocusSessionsService {
       ? new Date(createFocusSessionDto.startTime)
       : new Date();
 
-    // @ts-expect-error - Prisma client types are generated at build time
     const session = await this.prisma.focusSession.create({
       data: {
         ...createFocusSessionDto,
@@ -61,7 +60,6 @@ export class FocusSessionsService {
       }
     }
 
-    // @ts-expect-error - Prisma client types are generated at build time
     const sessions = await this.prisma.focusSession.findMany({
       where,
       orderBy: {
@@ -73,7 +71,6 @@ export class FocusSessionsService {
   }
 
   async findOne(id: string, userId: string): Promise<FocusSessionEntity> {
-    // @ts-expect-error - Prisma client types are generated at build time
     const session = await this.prisma.focusSession.findFirst({
       where: {
         id,
@@ -125,7 +122,6 @@ export class FocusSessionsService {
       updateData.focusRating = updateFocusSessionDto.focusRating;
     }
 
-    // @ts-expect-error - Prisma client types are generated at build time
     const updated = await this.prisma.focusSession.update({
       where: { id },
       data: updateData,
@@ -138,7 +134,6 @@ export class FocusSessionsService {
     const from = new Date();
     from.setDate(from.getDate() - days);
 
-    // @ts-expect-error - Prisma client types are generated at build time
     const sessions = await this.prisma.focusSession.findMany({
       where: {
         userId,
@@ -169,7 +164,6 @@ export class FocusSessionsService {
   }
 
   private async validateTaskAccess(taskId: string, userId: string): Promise<void> {
-    // @ts-expect-error - Prisma client types are generated at build time
     const task = await this.prisma.task.findFirst({
       where: {
         id: taskId,

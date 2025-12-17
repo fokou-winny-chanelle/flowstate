@@ -14,10 +14,7 @@ export class HabitEntity {
   name: string;
 
   @ApiProperty()
-  schedule: {
-    days: string[];
-    time?: string;
-  };
+  schedule: unknown;
 
   @ApiProperty()
   streakCurrent: number;

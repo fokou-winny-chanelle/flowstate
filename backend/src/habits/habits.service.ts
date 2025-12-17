@@ -15,7 +15,6 @@ export class HabitsService {
       await this.validateGoalAccess(createHabitDto.goalId, userId);
     }
 
-    // @ts-expect-error - Prisma client types are generated at build time
     const habit = await this.prisma.habit.create({
       data: {
         name: createHabitDto.name,
@@ -31,7 +30,6 @@ export class HabitsService {
   }
 
   async findAll(userId: string): Promise<HabitEntity[]> {
-    // @ts-expect-error - Prisma client types are generated at build time
     const habits = await this.prisma.habit.findMany({
       where: {
         userId,
@@ -45,7 +43,6 @@ export class HabitsService {
   }
 
   async findOne(id: string, userId: string): Promise<HabitEntity> {
-    // @ts-expect-error - Prisma client types are generated at build time
     const habit = await this.prisma.habit.findFirst({
       where: {
         id,
@@ -91,7 +88,6 @@ export class HabitsService {
       updateData.goalId = updateHabitDto.goalId;
     }
 
-    // @ts-expect-error - Prisma client types are generated at build time
     const habit = await this.prisma.habit.update({
       where: { id },
       data: updateData,
@@ -103,7 +99,6 @@ export class HabitsService {
   async remove(id: string, userId: string): Promise<void> {
     await this.findOne(id, userId);
 
-    // @ts-expect-error - Prisma client types are generated at build time
     await this.prisma.habit.delete({
       where: { id },
     });
@@ -122,7 +117,6 @@ export class HabitsService {
     const newStreak = habit.streakCurrent + 1;
     const newBest = Math.max(habit.streakBest, newStreak);
 
-    // @ts-expect-error - Prisma client types are generated at build time
     const updated = await this.prisma.habit.update({
       where: { id },
       data: {
@@ -137,7 +131,6 @@ export class HabitsService {
   async resetStreak(id: string, userId: string): Promise<HabitEntity> {
     await this.findOne(id, userId);
 
-    // @ts-expect-error - Prisma client types are generated at build time
     const updated = await this.prisma.habit.update({
       where: { id },
       data: {
@@ -170,7 +163,6 @@ export class HabitsService {
   }
 
   private async validateGoalAccess(goalId: string, userId: string): Promise<void> {
-    // @ts-expect-error - Prisma client types are generated at build time
     const goal = await this.prisma.goal.findFirst({
       where: {
         id: goalId,
@@ -188,7 +180,7 @@ export class HabitsService {
     userId: string;
     goalId: string | null;
     name: string;
-    schedule: { days: string[]; time?: string };
+    schedule: unknown;
     streakCurrent: number;
     streakBest: number;
     createdAt: Date;
@@ -197,9 +189,9 @@ export class HabitsService {
     return {
       id: habit.id,
       userId: habit.userId,
-      goalId: habit.goalId,
+      goalId: habit.goalId ?? undefined,
       name: habit.name,
-      schedule: habit.schedule as { days: string[]; time?: string },
+      schedule: habit.schedule,
       streakCurrent: habit.streakCurrent,
       streakBest: habit.streakBest,
       createdAt: habit.createdAt,

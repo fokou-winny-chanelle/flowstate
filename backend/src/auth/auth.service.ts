@@ -1,9 +1,9 @@
 import {
-  BadRequestException,
-  ConflictException,
-  Injectable,
-  NotFoundException,
-  UnauthorizedException,
+    BadRequestException,
+    ConflictException,
+    Injectable,
+    NotFoundException,
+    UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
@@ -47,9 +47,13 @@ export class AuthService {
         },
       });
 
-      await this.sendOtp({
+      // Send OTP email asynchronously (non-blocking)
+      this.sendOtp({
         email: signupDto.email,
         type: OtpType.SIGNUP,
+      }).catch((error) => {
+        // Log error but don't fail signup
+        console.error('Failed to send OTP email during signup:', error);
       });
 
       return {

@@ -52,6 +52,15 @@
   },
   "plugins": [
     {
+      "plugin": "@nx/angular/plugin",
+      "options": {
+        "applicationTargetName": "build",
+        "serveTargetName": "serve",
+        "testTargetName": "test",
+        "lintTargetName": "lint"
+      }
+    },
+    {
       "plugin": "@nx/playwright/plugin",
       "options": {
         "targetName": "e2e"

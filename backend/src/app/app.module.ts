@@ -30,14 +30,19 @@ import { AppService } from './app.service';
         // Support both REDIS_URL (Render format) and REDIS_HOST/REDIS_PORT (local/Docker)
         const redisUrl = configService.get<string>('REDIS_URL');
         
-        if (redisUrl) {
+        if (redisUrl && redisUrl.trim() !== '') {
           // Parse Redis URL (format: redis://[user:password@]host:port[/db])
           // Example: redis://red-xxxxx:6379 or redis://user:pass@red-xxxxx:6379
           try {
             const url = new URL(redisUrl);
+            const hostname = url.hostname;
+            const port = url.port ? parseInt(url.port, 10) : 6379;
+            
+            console.log(`[Redis Config] Parsed REDIS_URL: host=${hostname}, port=${port}`);
+            
             const redisConfig: any = {
-              host: url.hostname,
-              port: url.port ? parseInt(url.port, 10) : 6379,
+              host: hostname,
+              port: port,
               retryStrategy: (times: number) => {
                 const delay = Math.min(times * 50, 2000);
                 return delay;
@@ -48,6 +53,7 @@ import { AppService } from './app.service';
             // Add password if provided in URL
             if (url.password) {
               redisConfig.password = url.password;
+              console.log('[Redis Config] Password found in URL');
             }
             
             // Add username if provided (usually not needed for Render)
@@ -65,7 +71,8 @@ import { AppService } from './app.service';
             };
           } catch (error) {
             // If URL parsing fails, fall back to host/port format
-            console.warn('Failed to parse REDIS_URL, falling back to REDIS_HOST/REDIS_PORT', error);
+            console.error('[Redis Config] Failed to parse REDIS_URL:', redisUrl, error);
+            console.log('[Redis Config] Falling back to REDIS_HOST/REDIS_PORT');
           }
         }
         
@@ -73,6 +80,8 @@ import { AppService } from './app.service';
         const redisHost = configService.get<string>('REDIS_HOST') || 'localhost';
         const redisPort = configService.get<number>('REDIS_PORT') || 6379;
         const redisPassword = configService.get<string>('REDIS_PASSWORD');
+        
+        console.log(`[Redis Config] Using REDIS_HOST/REDIS_PORT: host=${redisHost}, port=${redisPort}`);
         
         const redisConfig: any = {
           host: redisHost,
@@ -87,6 +96,7 @@ import { AppService } from './app.service';
         // Add password if provided
         if (redisPassword) {
           redisConfig.password = redisPassword;
+          console.log('[Redis Config] Password found in REDIS_PASSWORD');
         }
         
         return {

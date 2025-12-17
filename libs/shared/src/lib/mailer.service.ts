@@ -1,10 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Resend } from 'resend';
-import mjml2html from 'mjml';
-import * as handlebars from 'handlebars';
 import * as fs from 'fs';
+import * as handlebars from 'handlebars';
+import mjml2html from 'mjml';
 import * as path from 'path';
+import { Resend } from 'resend';
 
 export interface SendEmailOptions {
   to: string | string[];
@@ -27,6 +27,8 @@ export class MailerService {
   private readonly logger = new Logger(MailerService.name);
   private resend: Resend;
   private readonly fromEmail: string;
+  
+  // eslint-disable-next-line @angular-eslint/prefer-inject
   constructor(private configService: ConfigService) {
     const apiKey = this.configService.get<string>('RESEND_API_KEY');
     if (!apiKey) {
@@ -87,13 +89,12 @@ export class MailerService {
   async sendEmail(options: SendEmailOptions): Promise<void> {
     try {
       let templateContent = await this.loadTemplate(options.template);
-      let html: string;
 
       if (options.context) {
         templateContent = this.compileTemplate(templateContent, options.context);
       }
 
-      html = this.mjmlToHtml(templateContent);
+      const html = this.mjmlToHtml(templateContent);
 
       const recipients = Array.isArray(options.to) ? options.to : [options.to];
 

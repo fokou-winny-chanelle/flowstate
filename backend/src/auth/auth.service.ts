@@ -1,3 +1,4 @@
+import { MailerService } from '@flowstate/shared/mailer';
 import {
   BadRequestException,
   ConflictException,
@@ -9,7 +10,6 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
-import { MailerService } from '@flowstate/shared/mailer';
 import { PrismaService } from '../prisma/prisma.service';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
@@ -28,7 +28,6 @@ export class AuthService {
   ) {}
 
   async signup(signupDto: SignupDto) {
-    // @ts-expect-error - Prisma client types are generated at build time
     const existingUser = await this.prisma.user.findUnique({
       where: { email: signupDto.email },
     });
@@ -39,7 +38,6 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(signupDto.password, 10);
 
-    // @ts-expect-error - Prisma client types are generated
     const user = await this.prisma.user.create({
       data: {
         email: signupDto.email,
@@ -63,7 +61,6 @@ export class AuthService {
     const otpCode = this.generateOtp();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-    // @ts-expect-error - Prisma client types are generated
     await this.prisma.otp.create({
       data: {
         email: sendOtpDto.email,
@@ -85,7 +82,6 @@ export class AuthService {
   }
 
   async verifyOtp(verifyOtpDto: VerifyOtpDto) {
-    // @ts-expect-error - Prisma client types are generated
     const otp = await this.prisma.otp.findFirst({
       where: {
         email: verifyOtpDto.email,
@@ -105,20 +101,17 @@ export class AuthService {
       throw new BadRequestException('Invalid or expired OTP');
     }
 
-    // @ts-expect-error - Prisma client types are generated
     await this.prisma.otp.update({
       where: { id: otp.id },
       data: { used: true },
     });
 
     if (verifyOtpDto.type === OtpType.SIGNUP) {
-      // @ts-expect-error - Prisma client types are generated
       const user = await this.prisma.user.findUnique({
         where: { email: verifyOtpDto.email },
       });
 
       if (user) {
-        // @ts-expect-error - Prisma client types are generated
         await this.prisma.user.update({
           where: { id: user.id },
           data: { isEmailVerified: true },
@@ -134,7 +127,6 @@ export class AuthService {
   }
 
   async login(loginDto: LoginDto) {
-    // @ts-expect-error - Prisma client types are generated
     const user = await this.prisma.user.findUnique({
       where: { email: loginDto.email },
     });
@@ -180,7 +172,6 @@ export class AuthService {
         secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
       });
 
-      // @ts-expect-error - Prisma client types are generated
       const tokenRecord = await this.prisma.refreshToken.findUnique({
         where: { jti: payload.jti },
         include: { user: true },
@@ -206,7 +197,6 @@ export class AuthService {
   async logout(userId: string, jti: string) {
     await this.revokeRefreshToken(jti);
 
-    // @ts-expect-error - Prisma client types are generated
     await this.prisma.refreshToken.updateMany({
       where: {
         userId,
@@ -223,7 +213,6 @@ export class AuthService {
   }
 
   async validateUser(userId: string) {
-    // @ts-expect-error - Prisma client types are generated
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
     });
@@ -255,25 +244,30 @@ export class AuthService {
       type: 'refresh',
     };
 
+    const jwtSecret = this.configService.get<string>('JWT_SECRET');
+    const jwtRefreshSecret = this.configService.get<string>('JWT_REFRESH_SECRET');
     const accessTokenExpiresIn = this.configService.get<string>('JWT_ACCESS_EXPIRES_IN') || '15m';
     const refreshTokenExpiresIn = this.configService.get<string>('JWT_REFRESH_EXPIRES_IN') || '7d';
 
-    // @ts-expect-error - JWT sign accepts object payload, expiresIn string is valid
+    if (!jwtSecret || !jwtRefreshSecret) {
+      throw new Error('JWT secrets are required in environment variables');
+    }
+
+    // @ts-expect-error - NestJS JWT types expect StringValue but ConfigService returns string
     const accessToken = this.jwtService.sign(accessTokenPayload, {
-      secret: this.configService.get<string>('JWT_SECRET'),
+      secret: jwtSecret,
       expiresIn: accessTokenExpiresIn,
     });
 
-    // @ts-expect-error - JWT sign accepts object payload, expiresIn string is valid
+    // @ts-expect-error - NestJS JWT types expect StringValue but ConfigService returns string
     const refreshToken = this.jwtService.sign(refreshTokenPayload, {
-      secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+      secret: jwtRefreshSecret,
       expiresIn: refreshTokenExpiresIn,
     });
 
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
 
-    // @ts-expect-error - Prisma client types are generated
     await this.prisma.refreshToken.create({
       data: {
         userId,
@@ -287,7 +281,6 @@ export class AuthService {
   }
 
   private async revokeRefreshToken(jti: string) {
-    // @ts-expect-error - Prisma client types are generated
     await this.prisma.refreshToken.updateMany({
       where: { jti },
       data: { revokedAt: new Date() },
@@ -295,7 +288,6 @@ export class AuthService {
   }
 
   async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
-    // @ts-expect-error - Prisma client types are generated
     const user = await this.prisma.user.findUnique({
       where: { email: forgotPasswordDto.email },
     });
@@ -321,7 +313,6 @@ export class AuthService {
   }
 
   async resetPassword(resetPasswordDto: ResetPasswordDto) {
-    // @ts-expect-error - Prisma client types are generated
     const otp = await this.prisma.otp.findFirst({
       where: {
         email: resetPasswordDto.email,
@@ -341,7 +332,6 @@ export class AuthService {
       throw new BadRequestException('Invalid or expired OTP');
     }
 
-    // @ts-expect-error - Prisma client types are generated
     const user = await this.prisma.user.findUnique({
       where: { email: resetPasswordDto.email },
     });
@@ -356,14 +346,11 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(resetPasswordDto.newPassword, 10);
 
-    // @ts-expect-error - Prisma client types are generated at build time
     await this.prisma.$transaction([
-      // @ts-expect-error - Prisma client types are generated
       this.prisma.user.update({
         where: { id: user.id },
         data: { password: hashedPassword },
       }),
-      // @ts-expect-error - Prisma client types are generated
       this.prisma.otp.update({
         where: { id: otp.id },
         data: { used: true },

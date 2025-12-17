@@ -1,18 +1,18 @@
-import { Process, Processor } from '@nestjs/bull';
+import {
+    FocusReportEmailContext,
+    GoalMilestoneEmailContext,
+    MailerService,
+    OtpEmailContext,
+    OverdueSummaryEmailContext,
+    PasswordResetEmailContext,
+    ProjectInvitationEmailContext,
+    StreakMilestoneEmailContext,
+    TaskReminderEmailContext,
+    WelcomeEmailContext,
+} from '@flowstate/shared/mailer';
+import { OnQueueError, OnQueueFailed, Process, Processor } from '@nestjs/bull';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bull';
-import {
-  MailerService,
-  OtpEmailContext,
-  WelcomeEmailContext,
-  PasswordResetEmailContext,
-  GoalMilestoneEmailContext,
-  StreakMilestoneEmailContext,
-  ProjectInvitationEmailContext,
-  TaskReminderEmailContext,
-  OverdueSummaryEmailContext,
-  FocusReportEmailContext,
-} from '@flowstate/shared/mailer';
 import { EmailJob, EmailJobType } from './email-queue.service';
 
 @Processor('email')
@@ -154,6 +154,28 @@ export class EmailProcessor {
       this.logger.error(`Failed to send focus report email to ${job.data.to}`, error);
       throw error;
     }
+  }
+
+  @OnQueueFailed()
+  async onQueueFailed(job: Job<EmailJob>, error: Error): Promise<void> {
+    this.logger.error(
+      `Job ${job.id} failed after ${job.attemptsMade} attempts`,
+      {
+        jobId: job.id,
+        jobType: job.data.type,
+        recipient: job.data.to,
+        error: error.message,
+        stack: error.stack,
+      }
+    );
+  }
+
+  @OnQueueError()
+  async onQueueError(error: Error): Promise<void> {
+    this.logger.error('Queue error occurred', {
+      error: error.message,
+      stack: error.stack,
+    });
   }
 }
 

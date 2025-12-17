@@ -33,7 +33,29 @@ export class AuthService {
     });
 
     if (existingUser) {
-      throw new ConflictException('User with this email already exists');
+      if (existingUser.isEmailVerified) {
+        throw new ConflictException('User with this email already exists');
+      }
+
+      const hashedPassword = await bcrypt.hash(signupDto.password, 10);
+      
+      await this.prisma.user.update({
+        where: { id: existingUser.id },
+        data: {
+          fullName: signupDto.fullName,
+          password: hashedPassword,
+        },
+      });
+
+      await this.sendOtp({
+        email: signupDto.email,
+        type: OtpType.SIGNUP,
+      });
+
+      return {
+        message: 'Registration pending. A new verification code has been sent to your email.',
+        userId: existingUser.id,
+      };
     }
 
     const hashedPassword = await bcrypt.hash(signupDto.password, 10);
@@ -60,6 +82,17 @@ export class AuthService {
   async sendOtp(sendOtpDto: SendOtpDto) {
     const otpCode = this.generateOtp();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    await this.prisma.otp.updateMany({
+      where: {
+        email: sendOtpDto.email,
+        type: sendOtpDto.type,
+        used: false,
+      },
+      data: {
+        used: true,
+      },
+    });
 
     await this.prisma.otp.create({
       data: {

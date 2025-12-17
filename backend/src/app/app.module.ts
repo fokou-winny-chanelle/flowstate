@@ -14,32 +14,61 @@ import { HabitsModule } from '../habits/habits.module';
 import { FocusSessionsModule } from '../focus-sessions/focus-sessions.module';
 import { EmailQueueModule } from '../email-queue/email-queue.module';
 import { SchedulerModule } from '../scheduler/scheduler.module';
+import { HealthModule } from '../health/health.module';
 import { HttpExceptionFilter } from '../core/filters/http-exception.filter';
+import { validationSchema } from '../config/env.validation';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      validationSchema,
     }),
     BullModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        redis: {
-          host: configService.get<string>('REDIS_HOST') || 'localhost',
-          port: configService.get<number>('REDIS_PORT') || 6379,
-        },
-      }),
+      useFactory: (configService: ConfigService) => {
+        const redisHost = configService.get<string>('REDIS_HOST') || 'localhost';
+        const redisPort = configService.get<number>('REDIS_PORT') || 6379;
+        
+        return {
+          redis: {
+            host: redisHost,
+            port: redisPort,
+            retryStrategy: (times: number) => {
+              const delay = Math.min(times * 50, 2000);
+              return delay;
+            },
+            maxRetriesPerRequest: 3,
+          },
+          defaultJobOptions: {
+            removeOnComplete: 100,
+            removeOnFail: 1000,
+          },
+        };
+      },
       inject: [ConfigService],
     }),
     ThrottlerModule.forRoot([
       {
-        ttl: 60000,
+        name: 'short',
+        ttl: 1000,
         limit: 10,
+      },
+      {
+        name: 'medium',
+        ttl: 60000,
+        limit: 100,
+      },
+      {
+        name: 'long',
+        ttl: 3600000,
+        limit: 1000,
       },
     ]),
     PrismaModule,
     EmailQueueModule,
     SchedulerModule,
+    HealthModule,
     AuthModule,
     TasksModule,
     ProjectsModule,

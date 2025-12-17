@@ -3,8 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
 import * as handlebars from 'handlebars';
 import mjml2html from 'mjml';
+import * as nodemailer from 'nodemailer';
 import * as path from 'path';
-import { Resend } from 'resend';
 
 export interface SendEmailOptions {
   to: string | string[];
@@ -94,19 +94,43 @@ export interface FocusReportEmailContext extends Record<string, unknown> {
 @Injectable()
 export class MailerService {
   private readonly logger = new Logger(MailerService.name);
-  private resend: Resend;
+  private transporter: nodemailer.Transporter;
   private readonly fromEmail: string;
+  private readonly fromName: string;
+  private readonly appUrl: string;
   
   // eslint-disable-next-line @angular-eslint/prefer-inject
   constructor(private configService: ConfigService) {
-    const apiKey = this.configService.get<string>('RESEND_API_KEY');
-    if (!apiKey) {
-      this.logger.warn('RESEND_API_KEY not found. Email service will not work.');
+    const gmailUser = this.configService.get<string>('GMAIL_USER');
+    const gmailAppPassword = this.configService.get<string>('GMAIL_APP_PASSWORD');
+    
+    if (!gmailUser || !gmailAppPassword) {
+      this.logger.warn('GMAIL_USER or GMAIL_APP_PASSWORD not found. Email service will not work.');
     }
-    this.resend = new Resend(apiKey);
-    this.fromEmail =
-      this.configService.get<string>('RESEND_FROM_EMAIL') ||
-      'onboarding@resend.dev';
+    
+    // Initialize Nodemailer with Gmail SMTP
+    this.transporter = nodemailer.createTransport({
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false,
+      auth: {
+        user: gmailUser,
+        pass: gmailAppPassword,
+      },
+    });
+    
+    this.fromEmail = gmailUser || 'noreply@example.com';
+    this.fromName = this.configService.get<string>('APP_NAME') || 'FlowState';
+    this.appUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:4200';
+    
+    // Verify SMTP connection
+    this.transporter.verify((error) => {
+      if (error) {
+        this.logger.error('SMTP connection failed:', error);
+      } else {
+        this.logger.log('SMTP server ready to send emails');
+      }
+    });
   }
 
   private getTemplatePath(templateName: string): string {
@@ -159,26 +183,31 @@ export class MailerService {
     try {
       let templateContent = await this.loadTemplate(options.template);
 
-      if (options.context) {
-        templateContent = this.compileTemplate(templateContent, options.context);
-      }
+      const context = {
+        ...options.context,
+        appUrl: this.appUrl,
+      };
+
+      templateContent = this.compileTemplate(templateContent, context);
 
       const html = this.mjmlToHtml(templateContent);
 
       const recipients = Array.isArray(options.to) ? options.to : [options.to];
 
-      await this.resend.emails.send({
-        from: this.fromEmail,
-        to: recipients,
+      const mailOptions = {
+        from: `"${this.fromName}" <${this.fromEmail}>`,
+        to: recipients.join(', '),
         subject: options.subject,
         html,
-      });
+      };
+
+      const info = await this.transporter.sendMail(mailOptions);
 
       this.logger.log(
-        `Email sent successfully to ${recipients.join(', ')}`,
+        `Email sent successfully to ${recipients.join(', ')}. Message ID: ${info.messageId}`,
       );
     } catch (error) {
-      this.logger.error(`Failed to send email`, error);
+      this.logger.error(`Failed to send email via Gmail SMTP:`, error);
       throw new Error('Failed to send email');
     }
   }

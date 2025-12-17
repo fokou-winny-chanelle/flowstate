@@ -1,7 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
-    "./frontend/src/**/*.{html,ts}",
+    "./apps/frontend/src/**/*.{html,ts}",
     "./libs/**/*.{html,ts}",
   ],
   theme: {
@@ -16,18 +16,23 @@ module.exports = {
         accent: '#0A66C2',
         surface: '#FFFFFF',
         background: '#F8F9FA',
+        muted: '#B5DEB1',
         text: {
           primary: '#1D1D1F',
           secondary: '#6E6E73',
           tertiary: '#AEAEB2',
         },
+        success: '#14A800',
+        info: '#0A66C2',
+        warning: '#FF9500',
+        error: '#FF3B30',
       },
       borderRadius: {
         'xs': '4px',
         'sm': '8px',
-        'md': '16px',
-        'lg': '24px',
-        'xl': '32px',
+        'md': '12px',
+        'lg': '16px',
+        'xl': '24px',
         'full': '999px',
       },
       spacing: {

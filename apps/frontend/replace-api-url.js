@@ -29,3 +29,4 @@ try {
   console.error(`[Build] Error updating environment file:`, error);
   process.exit(1);
 }
+

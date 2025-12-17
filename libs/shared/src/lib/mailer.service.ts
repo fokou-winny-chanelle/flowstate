@@ -109,31 +109,42 @@ export class MailerService {
     }
     
     // Initialize Nodemailer with Gmail SMTP
-    this.transporter = nodemailer.createTransport({
+    // Try port 465 (SSL) first, fallback to 587 (TLS) if needed
+    const smtpConfig: any = {
       host: 'smtp.gmail.com',
-      port: 587,
-      secure: false, // true for 465, false for other ports
+      port: 465, // Use SSL port (more reliable for cloud providers)
+      secure: true, // true for 465, false for other ports
       auth: {
         user: gmailUser,
         pass: gmailAppPassword,
       },
-      connectionTimeout: 60000, // 60 seconds
-      greetingTimeout: 30000, // 30 seconds
-      socketTimeout: 60000, // 60 seconds
+      connectionTimeout: 120000, // 120 seconds (2 minutes)
+      greetingTimeout: 60000, // 60 seconds
+      socketTimeout: 120000, // 120 seconds
       tls: {
         // Do not fail on invalid certs
         rejectUnauthorized: false,
+        ciphers: 'SSLv3',
       },
-    });
+      // Retry configuration
+      pool: false, // Don't use connection pooling (can cause issues with Gmail)
+      maxConnections: 1,
+      maxMessages: 1,
+    };
+    
+    this.transporter = nodemailer.createTransport(smtpConfig);
     
     this.fromEmail = gmailUser || 'noreply@example.com';
     this.fromName = this.configService.get<string>('APP_NAME') || 'FlowState';
     this.appUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:4200';
     
-    // Verify SMTP connection
+    // Verify SMTP connection asynchronously (non-blocking)
+    // Don't block application startup if SMTP verification fails
+    // Emails will still be attempted when sendMail() is called
     this.transporter.verify((error) => {
       if (error) {
-        this.logger.error('SMTP connection failed:', error);
+        this.logger.warn('SMTP verification failed (emails will still be attempted):', error.message);
+        this.logger.warn('This is often normal on cloud providers. Emails will be sent when needed.');
       } else {
         this.logger.log('SMTP server ready to send emails');
       }
@@ -187,36 +198,78 @@ export class MailerService {
   }
 
   async sendEmail(options: SendEmailOptions): Promise<void> {
-    try {
-      let templateContent = await this.loadTemplate(options.template);
+    let retries = 3;
+    let lastError: Error | null = null;
+    
+    while (retries > 0) {
+      try {
+        let templateContent = await this.loadTemplate(options.template);
 
-      const context = {
-        ...options.context,
-        appUrl: this.appUrl,
-      };
+        const context = {
+          ...options.context,
+          appUrl: this.appUrl,
+        };
 
-      templateContent = this.compileTemplate(templateContent, context);
+        templateContent = this.compileTemplate(templateContent, context);
 
-      const html = this.mjmlToHtml(templateContent);
+        const html = this.mjmlToHtml(templateContent);
 
-      const recipients = Array.isArray(options.to) ? options.to : [options.to];
+        const recipients = Array.isArray(options.to) ? options.to : [options.to];
 
-      const mailOptions = {
-        from: `"${this.fromName}" <${this.fromEmail}>`,
-        to: recipients.join(', '),
-        subject: options.subject,
-        html,
-      };
+        const mailOptions = {
+          from: `"${this.fromName}" <${this.fromEmail}>`,
+          to: recipients.join(', '),
+          subject: options.subject,
+          html,
+        };
 
-      const info = await this.transporter.sendMail(mailOptions);
+        // Try sending with current transporter
+        const info = await this.transporter.sendMail(mailOptions);
 
-      this.logger.log(
-        `Email sent successfully to ${recipients.join(', ')}. Message ID: ${info.messageId}`,
-      );
-    } catch (error) {
-      this.logger.error(`Failed to send email via Gmail SMTP:`, error);
-      throw new Error('Failed to send email');
+        this.logger.log(
+          `Email sent successfully to ${recipients.join(', ')}. Message ID: ${info.messageId}`,
+        );
+        return; // Success, exit retry loop
+      } catch (error: any) {
+        lastError = error;
+        retries--;
+        
+        // If it's a connection error and we have retries left, try recreating transporter
+        if (retries > 0 && (error.code === 'ETIMEDOUT' || error.code === 'ECONNREFUSED' || error.code === 'ESOCKET')) {
+          this.logger.warn(`SMTP send failed (${error.code}), retrying... (${retries} attempts left)`);
+          
+          // Recreate transporter with TLS port as fallback
+          if (this.transporter.options.port === 465) {
+            this.logger.log('Retrying with port 587 (TLS) instead of 465 (SSL)');
+            this.transporter = nodemailer.createTransport({
+              host: 'smtp.gmail.com',
+              port: 587,
+              secure: false,
+              auth: {
+                user: this.fromEmail,
+                pass: this.configService.get<string>('GMAIL_APP_PASSWORD'),
+              },
+              connectionTimeout: 120000,
+              greetingTimeout: 60000,
+              socketTimeout: 120000,
+              tls: {
+                rejectUnauthorized: false,
+              },
+            });
+          }
+          
+          // Wait before retry
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        } else {
+          // No more retries or different error
+          break;
+        }
+      }
     }
+    
+    // All retries failed
+    this.logger.error(`Failed to send email via Gmail SMTP after all retries:`, lastError);
+    throw new Error(`Failed to send email: ${lastError?.message || 'Unknown error'}`);
   }
 
   async sendOtpEmail(to: string, context: OtpEmailContext): Promise<void> {

@@ -1,14 +1,14 @@
 import {
-    FocusReportEmailContext,
-    GoalMilestoneEmailContext,
-    MailerService,
-    OtpEmailContext,
-    OverdueSummaryEmailContext,
-    PasswordResetEmailContext,
-    ProjectInvitationEmailContext,
-    StreakMilestoneEmailContext,
-    TaskReminderEmailContext,
-    WelcomeEmailContext,
+  FocusReportEmailContext,
+  GoalMilestoneEmailContext,
+  MailerService,
+  OtpEmailContext,
+  OverdueSummaryEmailContext,
+  PasswordResetEmailContext,
+  ProjectInvitationEmailContext,
+  StreakMilestoneEmailContext,
+  TaskReminderEmailContext,
+  WelcomeEmailContext,
 } from '@flowstate/shared/mailer';
 import { OnQueueError, OnQueueFailed, Process, Processor } from '@nestjs/bull';
 import { Logger } from '@nestjs/common';
@@ -172,10 +172,21 @@ export class EmailProcessor {
 
   @OnQueueError()
   async onQueueError(error: Error): Promise<void> {
-    this.logger.error('Queue error occurred', {
-      error: error.message,
-      stack: error.stack,
-    });
+    // Only log connection errors at warn level (they're expected if Redis is down)
+    // Other errors are logged at error level
+    if (error.message.includes('ENOTFOUND') || error.message.includes('ECONNREFUSED') || error.message.includes('getaddrinfo')) {
+      // These are connection errors - Redis is not available
+      // Emails will be sent directly via EmailQueueService fallback
+      this.logger.warn('Redis connection error - emails will be sent directly without queue', {
+        error: error.message,
+      });
+    } else {
+      // Other errors (unexpected)
+      this.logger.error('Queue error occurred', {
+        error: error.message,
+        stack: error.stack,
+      });
+    }
   }
 }
 

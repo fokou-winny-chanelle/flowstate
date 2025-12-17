@@ -154,16 +154,18 @@ Ce guide vous accompagne étape par étape pour déployer FlowState sur Render.c
    - **Region**: Même région
    - **Branch**: `master`
    - **Root Directory**: Laissez vide
-   - **Build Command**: `npm install && npx nx build frontend --configuration=production`
+   - **Build Command**: `npm install && node -e "const fs = require('fs'); const apiUrl = process.env.API_URL || 'https://flowstate-backend-fptr.onrender.com/api'; const file = 'apps/frontend/src/environments/environment.prod.ts'; const content = fs.readFileSync(file, 'utf8'); const updated = content.replace(/apiUrl: '[^']*'/, \"apiUrl: '\" + apiUrl + \"'\"); fs.writeFileSync(file, updated);" && npx nx build frontend --configuration=production`
    - **Publish Directory**: `dist/apps/frontend/browser`
 
 5. Cliquez sur "Advanced" pour ajouter les variables d'environnement:
 
    ```
-   API_URL = https://flowstate-backend.onrender.com/api
+   API_URL = https://flowstate-backend-fptr.onrender.com/api
    ```
 
-   **Important**: Remplacez `flowstate-backend` par le nom réel de votre service backend.
+   **Important**: 
+   - Remplacez `flowstate-backend-fptr` par le nom réel de votre service backend.
+   - La commande de build utilise cette variable `API_URL` pour mettre à jour `environment.prod.ts` avant le build.
 
 6. Cliquez sur "Create Static Site"
 7. Le build va commencer (3-5 minutes)

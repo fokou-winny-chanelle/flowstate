@@ -190,7 +190,7 @@ Ce guide vous accompagne pour déployer FlowState sur Render.com. Suivez chaque 
    - **Region** : **Même région** que les autres services
    - **Branch** : `master` (ou votre branche principale)
    - **Root Directory** : Laissez **vide**
-   - **Build Command** : `npm install && npx nx build frontend --configuration=production`
+   - **Build Command** : `npm install && node -e "const fs = require('fs'); const apiUrl = process.env.API_URL || 'https://flowstate-backend-fptr.onrender.com/api'; const file = 'apps/frontend/src/environments/environment.prod.ts'; const content = fs.readFileSync(file, 'utf8'); const updated = content.replace(/apiUrl: '[^']*'/, \"apiUrl: '\" + apiUrl + \"'\"); fs.writeFileSync(file, updated);" && npx nx build frontend --configuration=production`
    - **Publish Directory** : `dist/apps/frontend/browser`
 
 5. Cliquez sur **"Advanced"** pour ajouter les variables d'environnement
@@ -198,10 +198,12 @@ Ce guide vous accompagne pour déployer FlowState sur Render.com. Suivez chaque 
 6. Cliquez sur **"Add Environment Variable"** et ajoutez :
 
    ```
-   API_URL = https://flowstate-backend.onrender.com/api
+   API_URL = https://flowstate-backend-fptr.onrender.com/api
    ```
 
-   **⚠️ Important :** Remplacez `flowstate-backend` par le **nom réel** de votre service backend (celui noté à l'étape 3)
+   **⚠️ Important :** 
+   - Remplacez `flowstate-backend-fptr` par le **nom réel** de votre service backend (celui noté à l'étape 3)
+   - La commande de build utilise cette variable `API_URL` pour mettre à jour `environment.prod.ts` avant le build
 
 7. Cliquez sur **"Create Static Site"**
 8. ⏱️ Le build va commencer (3-5 minutes)

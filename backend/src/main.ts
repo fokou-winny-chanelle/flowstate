@@ -16,8 +16,31 @@ async function bootstrap() {
   app.setGlobalPrefix(globalPrefix);
   app.use(helmet());
 
+  // CORS configuration - use CORS_ORIGINS env variable or default to common development origins
+  // CORS_ORIGINS can be a comma-separated list: "http://localhost,http://localhost:4200,https://example.com"
+  const corsOriginsEnv = process.env.CORS_ORIGINS;
+  const allowedOrigins = corsOriginsEnv
+    ? corsOriginsEnv.split(',').map(origin => origin.trim()).filter(Boolean)
+    : [
+        process.env.FRONTEND_URL || 'http://localhost:4200',
+        'http://localhost',
+        'http://localhost:4200',
+      ].filter((origin, index, self) => self.indexOf(origin) === index); // Remove duplicates
+
+  Logger.log(`CORS allowed origins: ${allowedOrigins.join(', ')}`);
+
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:4200',
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        Logger.warn(`CORS blocked origin: ${origin}`);
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],

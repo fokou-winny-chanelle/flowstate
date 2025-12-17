@@ -13,12 +13,13 @@ RUN npm ci --no-audit
 
 # Copy Prisma schema and migrations
 COPY backend/prisma ./backend/prisma
+COPY prisma.config.ts ./prisma.config.ts
 COPY backend/tsconfig*.json ./backend/
 COPY backend/project.json ./backend/
 COPY backend/webpack.config.js ./backend/
 
-# Generate Prisma Client
-RUN npx prisma generate --schema=./backend/prisma/schema.prisma
+# Generate Prisma Client (DATABASE_URL not needed for generation, use dummy value)
+RUN DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" npx prisma generate --schema=./backend/prisma/schema.prisma
 
 # Copy all source files
 COPY . .
@@ -45,9 +46,15 @@ COPY --from=builder --chown=nestjs:nodejs /app/dist/backend ./dist
 COPY --from=builder --chown=nestjs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nestjs:nodejs /app/package*.json ./
 
+# Copy shared library (needed for MailerService and templates)
+# This is cleaner than copying files one by one in a monorepo
+COPY --from=builder --chown=nestjs:nodejs /app/libs/shared ./libs/shared
+
 # Copy Prisma files for migrations
 COPY --from=builder --chown=nestjs:nodejs /app/backend/prisma ./prisma
 COPY --from=builder --chown=nestjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
+# Copy Prisma config file (needed for datasource configuration)
+COPY --from=builder --chown=nestjs:nodejs /app/prisma.config.ts ./prisma.config.ts
 
 # Copy initialization script and make it executable
 COPY --chown=nestjs:nodejs backend/docker-entrypoint.sh ./docker-entrypoint.sh

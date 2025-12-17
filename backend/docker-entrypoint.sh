@@ -1,11 +1,26 @@
 #!/bin/sh
 set -e
 
+# Check if DATABASE_URL is set (for Render.com or other cloud providers)
+if [ -n "$DATABASE_URL" ]; then
+  echo "DATABASE_URL detected - using direct connection (Render.com/Cloud)"
+  echo "Executing Prisma migrations..."
+  
+  # Run Prisma migrations using DATABASE_URL
+  npx prisma migrate deploy --schema=./prisma/schema.prisma || {
+    echo "WARNING: Migration failed, but continuing..."
+  }
+  
+  echo "Migrations completed - starting application"
+  exec "$@"
+fi
+
+# Fallback to Docker Compose mode (local development)
 # Default to postgres service name (Docker Compose)
 DB_HOST=${DB_HOST:-postgres}
 DB_PORT=${DB_PORT:-5432}
 
-echo "Waiting for PostgreSQL to be ready..."
+echo "Waiting for PostgreSQL to be ready (Docker Compose mode)..."
 echo "Host: $DB_HOST, Port: $DB_PORT"
 
 # Wait for PostgreSQL to be ready (max 60 seconds)

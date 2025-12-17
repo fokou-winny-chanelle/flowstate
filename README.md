@@ -4,13 +4,15 @@ FlowState is a comprehensive productivity application built as a full-stack solu
 
 ## Live Demo
 
-The application is deployed and accessible at:
+The application is deployed and accessible at the following URLs:
 
-- **Frontend Application**: [https://flowstate-frontend.onrender.com](https://flowstate-frontend.onrender.com) (to be updated after deployment)
-- **Backend API**: [https://flowstate-backend.onrender.com/api](https://flowstate-backend.onrender.com/api) (to be updated after deployment)
-- **API Documentation (Swagger)**: [https://flowstate-backend.onrender.com/api/docs](https://flowstate-backend.onrender.com/api/docs) (to be updated after deployment)
+- **Frontend Application**: [https://flowstate-frontend.onrender.com](https://flowstate-frontend.onrender.com)
+- **Backend API**: [https://flowstate-backend-fptr.onrender.com/api](https://flowstate-backend-fptr.onrender.com/api)
+- **API Documentation (Swagger)**: [https://flowstate-backend-fptr.onrender.com/api/docs](https://flowstate-backend-fptr.onrender.com/api/docs)
 
-**Note**: The live deployment is hosted on Render.com. For detailed deployment instructions, see the [Deployment on Render](#deployment-on-render) section below. The application architecture is designed for Google Cloud Platform (GCP), and complete GCP deployment documentation is provided in the [Deployment on Google Cloud Platform (GCP)](#deployment-on-google-cloud-platform-gcp) section.
+**Current Status**: The application is fully deployed on Render.com and containerized with Docker. Local testing with Docker Compose is also available. For deployment details, see the [Deployment on Render.com](#deployment-on-rendercom) section below.
+
+**Note**: The application architecture is designed for Google Cloud Platform (GCP), and complete GCP deployment documentation is provided in the [Deployment on Google Cloud Platform (GCP)](#deployment-on-google-cloud-platform-gcp) section. However, due to GCP's free trial requirement for a traditional credit card, the live deployment will be performed on Render.com.
 
 ## Table of Contents
 
@@ -760,12 +762,14 @@ The application is deployed as two separate services on Render:
 3. **PostgreSQL Database**: Managed PostgreSQL instance provided by Render
 4. **Redis Cache**: Optional Redis instance for job queues (if needed)
 
-### Deployment Status
+### Deployment Configuration
 
-- **Frontend**: Deployed as Static Site
-- **Backend**: Deployed as Web Service using Docker
-- **Database**: Render PostgreSQL instance
-- **Status**: Live and accessible (URLs to be updated after deployment)
+The application is configured and ready for deployment on Render.com. The deployment process involves:
+
+- **Frontend**: Static Site deployment with build command and publish directory configured
+- **Backend**: Web Service deployment using Docker with automatic migrations
+- **Database**: Render PostgreSQL instance creation and connection
+- **Status**: All configuration files are ready. Follow the deployment guide to execute the deployment.
 
 ### Why Render.com?
 
@@ -789,12 +793,22 @@ The guide includes:
 - Configuring environment variables
 - Setting up service dependencies
 
-### Accessing the Live Application
+### Deployment Process
 
-Once deployed, the application will be accessible at:
-- **Frontend**: `https://flowstate-frontend.onrender.com`
-- **Backend API**: `https://flowstate-backend.onrender.com/api`
-- **API Documentation**: `https://flowstate-backend.onrender.com/api/docs`
+To deploy the application on Render.com, follow the detailed step-by-step guide in [RENDER_DEPLOYMENT_GUIDE.md](./RENDER_DEPLOYMENT_GUIDE.md). The guide provides:
+
+- Account creation and GitHub connection
+- PostgreSQL database setup
+- Backend Web Service configuration
+- Frontend Static Site deployment
+- Environment variable configuration
+- Service dependency setup
+
+The application is now deployed and accessible at:
+
+- **Frontend**: [https://flowstate-frontend.onrender.com](https://flowstate-frontend.onrender.com)
+- **Backend API**: [https://flowstate-backend-fptr.onrender.com/api](https://flowstate-backend-fptr.onrender.com/api)
+- **Swagger Documentation**: [https://flowstate-backend-fptr.onrender.com/api/docs](https://flowstate-backend-fptr.onrender.com/api/docs)
 
 **Note**: Free tier services on Render may spin down after 15 minutes of inactivity. The first request after spin-down may take 30-60 seconds to respond.
 

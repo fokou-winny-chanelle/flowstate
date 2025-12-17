@@ -33,3 +33,4 @@ echo "Migrations completed - starting application"
 
 # Execute the main command
 exec "$@"
+

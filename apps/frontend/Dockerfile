@@ -3,8 +3,8 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Build argument for API URL
-ARG API_URL=http://backend:3000/api
+# Build argument for API URL (default to localhost for browser access)
+ARG API_URL=http://localhost:3000/api
 
 # Copy package files
 COPY package*.json ./
@@ -41,3 +41,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 
 # Start nginx
 CMD ["nginx", "-g", "daemon off;"]
+

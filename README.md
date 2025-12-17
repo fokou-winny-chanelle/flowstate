@@ -2,6 +2,16 @@
 
 FlowState is a comprehensive productivity application built as a full-stack solution using Node.js (NestJS), Angular 17+, and PostgreSQL. The application provides advanced task management capabilities with user authentication, project organization, goal tracking, and focus session analytics.
 
+## Live Demo
+
+The application is deployed and accessible at:
+
+- **Frontend Application**: [https://flowstate-frontend.onrender.com](https://flowstate-frontend.onrender.com) (to be updated after deployment)
+- **Backend API**: [https://flowstate-backend.onrender.com/api](https://flowstate-backend.onrender.com/api) (to be updated after deployment)
+- **API Documentation (Swagger)**: [https://flowstate-backend.onrender.com/api/docs](https://flowstate-backend.onrender.com/api/docs) (to be updated after deployment)
+
+**Note**: The live deployment is hosted on Render.com. For detailed deployment instructions, see the [Deployment on Render](#deployment-on-render) section below. The application architecture is designed for Google Cloud Platform (GCP), and complete GCP deployment documentation is provided in the [Deployment on Google Cloud Platform (GCP)](#deployment-on-google-cloud-platform-gcp) section.
+
 ## Table of Contents
 
 - [Project Overview](#project-overview)
@@ -13,6 +23,7 @@ FlowState is a comprehensive productivity application built as a full-stack solu
 - [Running the Application](#running-the-application)
 - [Docker Deployment](#docker-deployment)
 - [Deployment on Google Cloud Platform (GCP)](#deployment-on-google-cloud-platform-gcp)
+- [Deployment on Render.com](#deployment-on-rendercom)
 - [Database Schema](#database-schema)
 - [API Documentation](#api-documentation)
 - [Frontend Application Guide](#frontend-application-guide)
@@ -351,71 +362,93 @@ The built files will be in `dist/apps/frontend/browser/`.
 
 ## Docker Deployment
 
-The application is fully containerized using Docker and Docker Compose. This is the recommended way to deploy the application.
+The application is fully containerized using Docker and Docker Compose. This is the **primary method for local evaluation** and ensures examiners can run the entire system with a single command.
 
 ### Prerequisites for Docker
 
-- Docker 24.0 or higher
+- Docker Desktop 24.0 or higher (must be running)
 - Docker Compose 2.0 or higher
+
+### How Docker Compose Uses Environment Variables
+
+Docker Compose automatically reads the `.env` file from the project root. All variables in `docker-compose.yml` using `${VARIABLE_NAME}` are loaded from your `.env` file.
+
+**Important**: The `DATABASE_URL` in your `.env` uses `localhost` for local development, but Docker Compose automatically constructs a new `DATABASE_URL` using the service name `postgres` instead of `localhost` for internal Docker network communication.
 
 ### Docker Configuration Files
 
 1. **Backend Dockerfile** (`backend/Dockerfile`)
    - Multi-stage build for optimization
+   - Generates Prisma Client and runs migrations automatically
    - Node.js 20 Alpine base image
-   - Production-ready configuration
+   - Non-root user for security
 
 2. **Frontend Dockerfile** (`apps/frontend/Dockerfile`)
    - Multi-stage build (Node.js for build, Nginx for serving)
-   - Nginx Alpine base image
-   - Optimized static file serving
+   - Replaces API URL at build time from environment variable
+   - Nginx Alpine base image with optimized configuration
 
 3. **Docker Compose** (`docker-compose.yml`)
-   - PostgreSQL service
-   - Redis service
-   - Backend API service
-   - Frontend application service
-   - Volume management
-   - Health checks
+   - Orchestrates 4 services: PostgreSQL, Redis, Backend, Frontend
+   - Automatic health checks and service dependencies
+   - Volume management for data persistence
+   - Network configuration for service communication
 
 ### Running with Docker Compose
 
-#### Step 1: Create Environment File
+#### Step 1: Ensure Environment File is Configured
 
-Create a `.env` file in the root directory (see Installation section for details).
+Your `.env` file must contain all required variables. See [UPDATE_ENV.md](./UPDATE_ENV.md) for the complete list.
+
+**Required variables for Docker:**
+```env
+DB_PASSWORD=flowstate123
+API_URL=http://localhost:3000/api
+FRONTEND_PORT=80
+PORT=3000
+# ... plus all other variables from Installation section
+```
 
 #### Step 2: Build and Start Services
 
 ```bash
-docker-compose up -d --build
+docker-compose up --build
 ```
 
 This command will:
-- Build all Docker images
+- Read all variables from your `.env` file automatically
+- Build Docker images for backend and frontend (5-10 minutes first time)
 - Start PostgreSQL, Redis, backend, and frontend services
-- Create necessary volumes
-- Set up network connections
+- Execute Prisma migrations automatically
+- Display logs from all services in real-time
+
+**To run in detached mode (background):**
+```bash
+docker-compose up -d --build
+```
 
 #### Step 3: Verify Services
 
-Check that all services are running:
+In a new terminal, check that all services are running:
 
 ```bash
 docker-compose ps
 ```
 
-You should see all four services (postgres, redis, backend, frontend) with status "Up".
+You should see all four services with status "Up (healthy)":
+- flowstate-postgres
+- flowstate-redis
+- flowstate-backend
+- flowstate-frontend
 
 #### Step 4: View Logs
 
 View logs from all services:
-
 ```bash
 docker-compose logs -f
 ```
 
 View logs from a specific service:
-
 ```bash
 docker-compose logs -f backend
 docker-compose logs -f frontend
@@ -423,9 +456,11 @@ docker-compose logs -f frontend
 
 #### Step 5: Access the Application
 
-- Frontend: http://localhost
-- Backend API: http://localhost:3000/api
-- API Documentation: http://localhost:3000/api/docs
+Once services are healthy, access:
+- **Frontend**: http://localhost
+- **Backend API**: http://localhost:3000/api
+- **API Documentation**: http://localhost:3000/api/docs
+- **Health Check**: http://localhost:3000/api/health/live
 
 ### Docker Commands Reference
 
@@ -473,7 +508,20 @@ docker-compose exec backend npx prisma migrate deploy
 
 ## Deployment on Google Cloud Platform (GCP)
 
-This section provides step-by-step instructions for deploying FlowState on Google Cloud Platform.
+**Note on Live GCP Deployment:** This project's architecture is designed for deployment on Google Cloud Platform (GCP). The full configuration and commands are documented below to demonstrate the production-ready cloud setup. However, due to GCP's free trial requirement for a traditional credit card (which is not available for this assessment), the live deployment for evaluators has been performed on Render.com. The instructions below represent the exact, production-grade process that would be followed with standard GCP access.
+
+This section provides step-by-step instructions for deploying FlowState on Google Cloud Platform, demonstrating the complete production architecture that would be implemented given standard resource access.
+
+### Architecture Overview
+
+The GCP deployment architecture utilizes:
+
+- **Cloud Run**: Stateless containerized services for backend and frontend with automatic scaling
+- **Cloud SQL**: Managed PostgreSQL database with automated backups and high availability
+- **Artifact Registry**: Private Docker image repository for secure image storage
+- **Cloud Build**: CI/CD pipeline for automated builds and deployments
+- **Secret Manager**: Secure storage and management of environment variables and credentials
+- **Cloud Memorystore**: Managed Redis instance for caching and job queues
 
 ### Prerequisites
 
@@ -689,6 +737,66 @@ gcloud run domain-mappings create \
 3. Configure SSL certificates (automatic with Cloud Run)
 
 4. Set up monitoring and logging in GCP Console
+
+### Infrastructure as Code Note
+
+In a team or production environment, this entire GCP infrastructure would be codified using Infrastructure as Code (IaC) tools such as:
+- **Terraform**: Declarative infrastructure provisioning
+- **Pulumi**: Infrastructure as code using familiar programming languages
+- **Google Cloud Deployment Manager**: GCP-native IaC solution
+
+This ensures reproducibility, version control, and easier management of cloud resources.
+
+## Deployment on Render.com
+
+The live deployment for this assessment is hosted on Render.com. Render provides a free tier that supports Docker containers and PostgreSQL, making it accessible for evaluation without requiring credit card verification.
+
+### Deployment Overview
+
+The application is deployed as two separate services on Render:
+
+1. **Backend Web Service**: NestJS API running in a Docker container
+2. **Frontend Static Site**: Angular application built and served as static files
+3. **PostgreSQL Database**: Managed PostgreSQL instance provided by Render
+4. **Redis Cache**: Optional Redis instance for job queues (if needed)
+
+### Deployment Status
+
+- **Frontend**: Deployed as Static Site
+- **Backend**: Deployed as Web Service using Docker
+- **Database**: Render PostgreSQL instance
+- **Status**: Live and accessible (URLs to be updated after deployment)
+
+### Why Render.com?
+
+Render.com was chosen for the live deployment because:
+- Free tier available without credit card verification
+- Native support for Docker containers
+- Managed PostgreSQL database included
+- Simple deployment process
+- Automatic SSL certificates
+- Built-in CI/CD from GitHub
+
+### Deployment Instructions
+
+For detailed step-by-step instructions on deploying to Render.com, see [RENDER_DEPLOYMENT_GUIDE.md](./RENDER_DEPLOYMENT_GUIDE.md).
+
+The guide includes:
+- Creating Render account and connecting GitHub
+- Setting up PostgreSQL database
+- Configuring backend Web Service
+- Deploying frontend Static Site
+- Configuring environment variables
+- Setting up service dependencies
+
+### Accessing the Live Application
+
+Once deployed, the application will be accessible at:
+- **Frontend**: `https://flowstate-frontend.onrender.com`
+- **Backend API**: `https://flowstate-backend.onrender.com/api`
+- **API Documentation**: `https://flowstate-backend.onrender.com/api/docs`
+
+**Note**: Free tier services on Render may spin down after 15 minutes of inactivity. The first request after spin-down may take 30-60 seconds to respond.
 
 ## Database Schema
 

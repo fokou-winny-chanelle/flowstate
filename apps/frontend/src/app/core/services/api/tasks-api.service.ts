@@ -4,6 +4,7 @@ import {
     injectMutation,
     injectQuery
 } from '@tanstack/angular-query-experimental';
+import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { Task } from '../../models/types';
 import { QueryClientService } from '../query-client.service';
@@ -49,7 +50,7 @@ export class TasksApiService {
         if (filters?.priority) params['priority'] = filters.priority.toString();
         if (filters?.energyLevel) params['energyLevel'] = filters.energyLevel;
 
-        return this.http.get<Task[]>(this.apiUrl, { params });
+        return firstValueFrom(this.http.get<Task[]>(this.apiUrl, { params }));
       },
     }));
   }
@@ -57,7 +58,7 @@ export class TasksApiService {
   getTodayTasks() {
     return injectQuery(() => ({
       queryKey: ['tasks', 'today'],
-      queryFn: () => this.http.get<Task[]>(`${this.apiUrl}/today`),
+      queryFn: () => firstValueFrom(this.http.get<Task[]>(`${this.apiUrl}/today`)),
     }));
   }
 
@@ -65,16 +66,16 @@ export class TasksApiService {
     return injectQuery(() => ({
       queryKey: ['tasks', 'upcoming', days],
       queryFn: () =>
-        this.http.get<Task[]>(`${this.apiUrl}/upcoming`, {
+        firstValueFrom(this.http.get<Task[]>(`${this.apiUrl}/upcoming`, {
           params: { days: days.toString() },
-        }),
+        })),
     }));
   }
 
   getTask(id: string) {
     return injectQuery(() => ({
       queryKey: ['tasks', id],
-      queryFn: () => this.http.get<Task>(`${this.apiUrl}/${id}`),
+      queryFn: () => firstValueFrom(this.http.get<Task>(`${this.apiUrl}/${id}`)),
       enabled: !!id,
     }));
   }
@@ -83,7 +84,7 @@ export class TasksApiService {
     const queryClient = this.queryClient;
     return injectMutation(() => ({
       mutationFn: (data: CreateTaskDto) =>
-        this.http.post<Task>(this.apiUrl, data),
+        firstValueFrom(this.http.post<Task>(this.apiUrl, data)),
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ['tasks'] });
       },
@@ -94,7 +95,7 @@ export class TasksApiService {
     const queryClient = this.queryClient;
     return injectMutation(() => ({
       mutationFn: (input: string) =>
-        this.http.post<Task>(`${this.apiUrl}/from-nlp`, { input }),
+        firstValueFrom(this.http.post<Task>(`${this.apiUrl}/from-nlp`, { input })),
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ['tasks'] });
       },
@@ -105,7 +106,7 @@ export class TasksApiService {
     const queryClient = this.queryClient;
     return injectMutation(() => ({
       mutationFn: ({ id, data }: { id: string; data: Partial<CreateTaskDto> }) =>
-        this.http.patch<Task>(`${this.apiUrl}/${id}`, data),
+        firstValueFrom(this.http.patch<Task>(`${this.apiUrl}/${id}`, data)),
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ['tasks'] });
       },
@@ -116,7 +117,7 @@ export class TasksApiService {
     const queryClient = this.queryClient;
     return injectMutation(() => ({
       mutationFn: (id: string) =>
-        this.http.post<Task>(`${this.apiUrl}/${id}/complete`, {}),
+        firstValueFrom(this.http.post<Task>(`${this.apiUrl}/${id}/complete`, {})),
       onMutate: async (id: string) => {
         await queryClient.cancelQueries({ queryKey: ['tasks'] });
         const previousTasks = queryClient.getQueryData<Task[]>(['tasks', 'all']);
@@ -145,7 +146,7 @@ export class TasksApiService {
     const queryClient = this.queryClient;
     return injectMutation(() => ({
       mutationFn: ({ id, until }: { id: string; until: string }) =>
-        this.http.post<Task>(`${this.apiUrl}/${id}/snooze`, { until }),
+        firstValueFrom(this.http.post<Task>(`${this.apiUrl}/${id}/snooze`, { until })),
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ['tasks'] });
       },
@@ -155,7 +156,7 @@ export class TasksApiService {
   deleteTask() {
     const queryClient = this.queryClient;
     return injectMutation(() => ({
-      mutationFn: (id: string) => this.http.delete(`${this.apiUrl}/${id}`),
+      mutationFn: (id: string) => firstValueFrom(this.http.delete(`${this.apiUrl}/${id}`)),
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ['tasks'] });
       },

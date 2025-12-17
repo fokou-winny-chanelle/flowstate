@@ -4,6 +4,7 @@ import {
   injectMutation,
   injectQuery
 } from '@tanstack/angular-query-experimental';
+import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { Project } from '../../models/types';
 import { QueryClientService } from '../query-client.service';
@@ -29,14 +30,14 @@ export class ProjectsApiService {
   getProjects() {
     return injectQuery(() => ({
       queryKey: ['projects'],
-      queryFn: () => this.http.get<Project[]>(this.apiUrl),
+      queryFn: () => firstValueFrom(this.http.get<Project[]>(this.apiUrl)),
     }));
   }
 
   getProject(id: string) {
     return injectQuery(() => ({
       queryKey: ['projects', id],
-      queryFn: () => this.http.get<Project>(`${this.apiUrl}/${id}`),
+      queryFn: () => firstValueFrom(this.http.get<Project>(`${this.apiUrl}/${id}`)),
       enabled: !!id,
     }));
   }
@@ -45,7 +46,7 @@ export class ProjectsApiService {
     const queryClient = this.queryClient;
     return injectMutation(() => ({
       mutationFn: (data: CreateProjectDto) =>
-        this.http.post<Project>(this.apiUrl, data),
+        firstValueFrom(this.http.post<Project>(this.apiUrl, data)),
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ['projects'] });
       },
@@ -56,7 +57,7 @@ export class ProjectsApiService {
     const queryClient = this.queryClient;
     return injectMutation(() => ({
       mutationFn: ({ id, data }: { id: string; data: Partial<CreateProjectDto> }) =>
-        this.http.patch<Project>(`${this.apiUrl}/${id}`, data),
+        firstValueFrom(this.http.patch<Project>(`${this.apiUrl}/${id}`, data)),
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ['projects'] });
       },
@@ -66,7 +67,7 @@ export class ProjectsApiService {
   deleteProject() {
     const queryClient = this.queryClient;
     return injectMutation(() => ({
-      mutationFn: (id: string) => this.http.delete(`${this.apiUrl}/${id}`),
+      mutationFn: (id: string) => firstValueFrom(this.http.delete(`${this.apiUrl}/${id}`)),
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ['projects'] });
       },
@@ -77,7 +78,7 @@ export class ProjectsApiService {
     const queryClient = this.queryClient;
     return injectMutation(() => ({
       mutationFn: (data: AddMemberDto) =>
-        this.http.post(`${this.apiUrl}/${projectId}/members`, data),
+        firstValueFrom(this.http.post(`${this.apiUrl}/${projectId}/members`, data)),
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ['projects', projectId] });
       },
@@ -88,10 +89,10 @@ export class ProjectsApiService {
     const queryClient = this.queryClient;
     return injectMutation(() => ({
       mutationFn: () =>
-        this.http.post<{ progress: number }>(
+        firstValueFrom(this.http.post<{ progress: number }>(
           `${this.apiUrl}/${projectId}/update-progress`,
           {}
-        ),
+        )),
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ['projects', projectId] });
       },

@@ -85,7 +85,17 @@ export class TasksApiService {
     return injectMutation(() => ({
       mutationFn: (data: CreateTaskDto) =>
         firstValueFrom(this.http.post<Task>(this.apiUrl, data)),
-      onSuccess: () => {
+      onSuccess: (newTask) => {
+        const todayTasks = queryClient.getQueryData<Task[]>(['tasks', 'today']);
+        if (todayTasks && newTask.dueDate) {
+          const taskDate = new Date(newTask.dueDate);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          taskDate.setHours(0, 0, 0, 0);
+          if (taskDate.getTime() === today.getTime()) {
+            queryClient.setQueryData<Task[]>(['tasks', 'today'], [...todayTasks, newTask]);
+          }
+        }
         queryClient.invalidateQueries({ queryKey: ['tasks'] });
       },
     }));
@@ -120,20 +130,33 @@ export class TasksApiService {
         firstValueFrom(this.http.post<Task>(`${this.apiUrl}/${id}/complete`, {})),
       onMutate: async (id: string) => {
         await queryClient.cancelQueries({ queryKey: ['tasks'] });
-        const previousTasks = queryClient.getQueryData<Task[]>(['tasks', 'all']);
-        if (previousTasks) {
+        const previousTodayTasks = queryClient.getQueryData<Task[]>(['tasks', 'today']);
+        const previousAllTasks = queryClient.getQueryData<Task[]>(['tasks', 'all']);
+        
+        if (previousTodayTasks) {
           queryClient.setQueryData<Task[]>(
-            ['tasks', 'all'],
-            previousTasks.map((t) =>
+            ['tasks', 'today'],
+            previousTodayTasks.map((t) =>
               t.id === id ? { ...t, isCompleted: true } : t
             )
           );
         }
-        return { previousTasks };
+        if (previousAllTasks) {
+          queryClient.setQueryData<Task[]>(
+            ['tasks', 'all'],
+            previousAllTasks.map((t) =>
+              t.id === id ? { ...t, isCompleted: true } : t
+            )
+          );
+        }
+        return { previousTodayTasks, previousAllTasks };
       },
       onError: (_, __, context) => {
-        if (context?.previousTasks) {
-          queryClient.setQueryData(['tasks', 'all'], context.previousTasks);
+        if (context?.previousTodayTasks) {
+          queryClient.setQueryData(['tasks', 'today'], context.previousTodayTasks);
+        }
+        if (context?.previousAllTasks) {
+          queryClient.setQueryData(['tasks', 'all'], context.previousAllTasks);
         }
       },
       onSettled: () => {
@@ -157,7 +180,34 @@ export class TasksApiService {
     const queryClient = this.queryClient;
     return injectMutation(() => ({
       mutationFn: (id: string) => firstValueFrom(this.http.delete(`${this.apiUrl}/${id}`)),
-      onSuccess: () => {
+      onMutate: async (id: string) => {
+        await queryClient.cancelQueries({ queryKey: ['tasks'] });
+        const previousTodayTasks = queryClient.getQueryData<Task[]>(['tasks', 'today']);
+        const previousAllTasks = queryClient.getQueryData<Task[]>(['tasks', 'all']);
+        
+        if (previousTodayTasks) {
+          queryClient.setQueryData<Task[]>(
+            ['tasks', 'today'],
+            previousTodayTasks.filter((t) => t.id !== id)
+          );
+        }
+        if (previousAllTasks) {
+          queryClient.setQueryData<Task[]>(
+            ['tasks', 'all'],
+            previousAllTasks.filter((t) => t.id !== id)
+          );
+        }
+        return { previousTodayTasks, previousAllTasks };
+      },
+      onError: (_, __, context) => {
+        if (context?.previousTodayTasks) {
+          queryClient.setQueryData(['tasks', 'today'], context.previousTodayTasks);
+        }
+        if (context?.previousAllTasks) {
+          queryClient.setQueryData(['tasks', 'all'], context.previousAllTasks);
+        }
+      },
+      onSettled: () => {
         queryClient.invalidateQueries({ queryKey: ['tasks'] });
       },
     }));

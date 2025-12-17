@@ -1,17 +1,17 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { RouterModule } from '@angular/router';
+import { LogoComponent } from '../../shared/ui/logo/logo.component';
 
 @Component({
   selector: 'flow-auth-layout',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, LogoComponent],
   template: `
     <div class="auth-layout">
       <div class="auth-content">
         <div class="auth-header">
-          <h1 class="logo">FlowState</h1>
-          <p class="tagline">The calm place for your busy mind</p>
+          <flow-logo size="2xl" [clickable]="false"></flow-logo>
         </div>
         <router-outlet></router-outlet>
       </div>
@@ -34,32 +34,46 @@ import { RouterModule } from '@angular/router';
 
       .auth-content {
         width: 100%;
-        max-width: 400px;
+        max-width: 480px;
         background-color: var(--color-surface);
         border-radius: var(--radius-xl);
-        padding: var(--space-2xl);
+        padding: var(--space-3xl) var(--space-2xl);
         box-shadow: var(--shadow-lg);
+        overflow: visible;
       }
 
       .auth-header {
         text-align: center;
+        margin-bottom: var(--space-3xl);
+        padding: 0 var(--space-md);
+      }
+
+      .auth-header flow-logo {
+        display: flex;
+        justify-content: center;
+        align-items: center;
         margin-bottom: var(--space-2xl);
+        width: 100%;
       }
 
-      .logo {
-        font-size: var(--font-size-3xl);
-        font-weight: 700;
-        color: var(--color-primary);
-        margin: 0 0 var(--space-sm) 0;
+      .auth-header flow-logo .logo {
+        max-width: 100%;
+        width: 100%;
+        display: flex;
+        justify-content: center;
       }
 
-      .tagline {
-        font-size: var(--font-size-sm);
-        color: var(--color-text-secondary);
-        margin: 0;
+      .auth-header flow-logo .logo-image {
+        width: auto;
+        max-width: 100%;
+        height: auto;
+        max-height: 220px;
+        object-fit: contain;
+        image-rendering: -webkit-optimize-contrast;
+        image-rendering: crisp-edges;
+        image-rendering: high-quality;
       }
     `,
   ],
 })
 export class AuthLayoutComponent {}
-

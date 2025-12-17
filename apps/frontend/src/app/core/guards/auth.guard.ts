@@ -6,7 +6,8 @@ export const authGuard: CanActivateFn = (route, state) => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
-  if (!authService.isAuthenticated()) {
+  const isAuth = authService.isAuthenticated;
+  if (!isAuth()) {
     router.navigate(['/auth/login'], {
       queryParams: { returnUrl: state.url },
     });
@@ -16,3 +17,15 @@ export const authGuard: CanActivateFn = (route, state) => {
   return true;
 };
 
+export const publicGuard: CanActivateFn = (route, state) => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+
+  const isAuth = authService.isAuthenticated;
+  if (isAuth()) {
+    router.navigate(['/today']);
+    return false;
+  }
+
+  return true;
+};

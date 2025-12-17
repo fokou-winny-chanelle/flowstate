@@ -46,14 +46,18 @@ export class AuthService {
     });
   }
 
-  sendOtp(email: string, type: 'signup' | 'forgot-password'): Observable<{ message: string; email: string }> {
+  sendOtp(email: string, type: 'signup' | 'login' | 'reset_password'): Observable<{ message: string; email: string }> {
     return this.http.post<{ message: string; email: string }>(`${this.apiUrl}/send-otp`, {
       email,
       type,
     });
   }
 
-  verifyOtp(email: string, code: string, type: 'signup' | 'forgot-password'): Observable<{ message: string; verified: boolean }> {
+  verifyOtp(
+    email: string,
+    code: string,
+    type: 'signup' | 'login' | 'reset_password',
+  ): Observable<{ message: string; verified: boolean }> {
     return this.http.post<{ message: string; verified: boolean }>(`${this.apiUrl}/verify-otp`, {
       email,
       code,

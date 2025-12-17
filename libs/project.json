@@ -26,7 +26,7 @@
         },
         "development": {}
       },
-      "defaultConfiguration": "production"
+      "defaultConfiguration": "development"
     },
     "nx-release-publish": {
       "options": {

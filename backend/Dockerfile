@@ -3,18 +3,19 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files
+# Copy package files first for better Docker layer caching
 COPY package*.json ./
 COPY tsconfig*.json ./
 COPY nx.json ./
 
 # Install dependencies (including dev dependencies for Prisma)
-RUN npm ci
+RUN npm ci --no-audit
 
 # Copy Prisma schema and migrations
 COPY backend/prisma ./backend/prisma
 COPY backend/tsconfig*.json ./backend/
 COPY backend/project.json ./backend/
+COPY backend/webpack.config.js ./backend/
 
 # Generate Prisma Client
 RUN npx prisma generate --schema=./backend/prisma/schema.prisma

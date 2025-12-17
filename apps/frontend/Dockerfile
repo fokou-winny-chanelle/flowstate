@@ -6,13 +6,13 @@ WORKDIR /app
 # Build argument for API URL (default to localhost for browser access)
 ARG API_URL=http://localhost:3000/api
 
-# Copy package files
+# Copy package files first for better Docker layer caching
 COPY package*.json ./
 COPY nx.json ./
 COPY tsconfig*.json ./
 
 # Install dependencies
-RUN npm ci
+RUN npm ci --no-audit
 
 # Copy source code
 COPY . .

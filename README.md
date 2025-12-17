@@ -1,82 +1,274 @@
-# Flowstate
+# FlowState
 
 <a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
 
-✨ Your new, shiny [Nx workspace](https://nx.dev) is almost ready ✨.
+**FlowState** - A calm place for your busy mind. A productivity application built with Angular 17+ and NestJS in an Nx monorepo.
 
-[Learn more about this workspace setup and its capabilities](https://nx.dev/getting-started/tutorials/angular-monorepo-tutorial?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects) or run `npx nx graph` to visually explore what was created. Now, let's get you up to speed!
+## 🏗️ Architecture
 
-## Finish your CI setup
+This is an Nx monorepo containing:
+- **Frontend**: Angular 17+ application with Tailwind CSS, TanStack Query, and standalone components
+- **Backend**: NestJS API with PostgreSQL, Redis, JWT authentication, and comprehensive task/project management
 
-[Click here to finish setting up your workspace!](https://cloud.nx.app/connect/lPpsIFFQof)
+## 🚀 Quick Start
 
+### Prerequisites
 
-## Run tasks
+- Node.js 20+
+- Docker and Docker Compose (for containerized deployment)
+- PostgreSQL 16+ (if running backend locally)
+- Redis 7+ (if running backend locally)
 
-To run the dev server for your app, use:
+### Development Setup
 
-```sh
-npx nx serve flowstate
+#### Option 1: Docker Compose (Recommended)
+
+1. **Create a `.env` file** in the root directory:
+
+```env
+# Database
+DB_PASSWORD=your_secure_password
+
+# JWT Secrets
+JWT_SECRET=your_jwt_secret_key
+JWT_REFRESH_SECRET=your_jwt_refresh_secret_key
+
+# Email Configuration (for OTP)
+GMAIL_USER=your_email@gmail.com
+GMAIL_APP_PASSWORD=your_app_password
+
+# Application
+APP_NAME=FlowState
+NODE_ENV=production
+PORT=3000
+FRONTEND_PORT=80
+
+# API URL for frontend (used during build)
+API_URL=http://backend:3000/api
 ```
 
-To create a production bundle:
+2. **Start all services**:
 
-```sh
-npx nx build flowstate
+```bash
+docker-compose up -d
 ```
 
-To see all available targets to run for a project, run:
+This will start:
+- PostgreSQL database (port 5432)
+- Redis cache (port 6379)
+- Backend API (port 3000)
+- Frontend application (port 80)
 
-```sh
-npx nx show project flowstate
+3. **Access the application**:
+   - Frontend: http://localhost
+   - Backend API: http://localhost:3000
+   - API Documentation: http://localhost:3000/api/docs
+
+#### Option 2: Local Development
+
+**Backend**:
+
+```bash
+cd backend
+npm install
+npm run start:dev
 ```
 
-These targets are either [inferred automatically](https://nx.dev/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.
+**Frontend**:
 
-[More about running tasks in the docs &raquo;](https://nx.dev/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Add new projects
-
-While you could add new projects to your workspace manually, you might want to leverage [Nx plugins](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) and their [code generation](https://nx.dev/features/generate-code?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) feature.
-
-Use the plugin's generator to create new projects.
-
-To generate a new application, use:
-
-```sh
-npx nx g @nx/angular:app demo
+```bash
+npx nx serve frontend
 ```
 
-To generate a new library, use:
+Access the frontend at http://localhost:4200
 
-```sh
-npx nx g @nx/angular:lib mylib
+## 📦 Docker Commands
+
+### Build and Start Services
+
+```bash
+# Build and start all services
+docker-compose up -d --build
+
+# View logs
+docker-compose logs -f
+
+# Stop all services
+docker-compose down
+
+# Stop and remove volumes (⚠️ deletes database data)
+docker-compose down -v
 ```
 
-You can use `npx nx list` to get a list of installed plugins. Then, run `npx nx list <plugin-name>` to learn about more specific capabilities of a particular plugin. Alternatively, [install Nx Console](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) to browse plugins and generators in your IDE.
+### Individual Service Management
 
-[Learn more about Nx plugins &raquo;](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) | [Browse the plugin registry &raquo;](https://nx.dev/plugin-registry?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+```bash
+# Start only backend
+docker-compose up -d backend
 
+# Start only frontend
+docker-compose up -d frontend
 
-[Learn more about Nx on CI](https://nx.dev/ci/intro/ci-with-nx#ready-get-started-with-your-provider?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+# Restart a service
+docker-compose restart backend
 
-## Install Nx Console
+# View logs for a specific service
+docker-compose logs -f frontend
+```
 
-Nx Console is an editor extension that enriches your developer experience. It lets you run tasks, generate code, and improves code autocompletion in your IDE. It is available for VSCode and IntelliJ.
+## 🛠️ Development Tasks
 
-[Install Nx Console &raquo;](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+### Frontend
 
-## Useful links
+```bash
+# Serve frontend in development mode
+npx nx serve frontend
 
-Learn more:
+# Build frontend for production
+npx nx build frontend --configuration=production
 
-- [Learn more about this workspace setup](https://nx.dev/getting-started/tutorials/angular-monorepo-tutorial?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects)
-- [Learn about Nx on CI](https://nx.dev/ci/intro/ci-with-nx?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Releasing Packages with Nx release](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [What are Nx plugins?](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+# Run linter
+npx nx lint frontend
 
-And join the Nx community:
-- [Discord](https://go.nx.dev/community)
-- [Follow us on X](https://twitter.com/nxdevtools) or [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [Our Youtube channel](https://www.youtube.com/@nxdevtools)
-- [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+# Run tests
+npx nx test frontend
+```
+
+### Backend
+
+```bash
+# Serve backend in development mode
+cd backend
+npm run start:dev
+
+# Build backend for production
+npx nx build backend --prod
+
+# Run database migrations
+cd backend
+npx prisma migrate dev
+```
+
+## 📁 Project Structure
+
+```
+flowstate/
+├── apps/
+│   ├── frontend/          # Angular 17+ application
+│   │   ├── src/
+│   │   │   ├── app/
+│   │   │   │   ├── core/          # Services, guards, interceptors
+│   │   │   │   ├── features/      # Feature modules (auth, today, etc.)
+│   │   │   │   ├── layouts/       # Layout components
+│   │   │   │   └── shared/        # Shared UI components
+│   │   │   └── environments/      # Environment configurations
+│   │   ├── Dockerfile             # Frontend container definition
+│   │   └── nginx.conf             # Nginx configuration
+│   └── backend/           # NestJS API
+│       ├── src/
+│       │   ├── auth/      # Authentication module
+│       │   ├── tasks/     # Tasks module
+│       │   ├── projects/ # Projects module
+│       │   └── ...
+│       └── Dockerfile     # Backend container definition
+├── docker-compose.yml     # Docker Compose configuration
+└── package.json           # Root package.json for monorepo
+```
+
+## 🔐 Environment Variables
+
+Create a `.env` file in the root directory with the following variables:
+
+```env
+# Database Configuration
+DB_PASSWORD=your_secure_password
+
+# JWT Configuration
+JWT_SECRET=your_jwt_secret_key_min_32_chars
+JWT_REFRESH_SECRET=your_jwt_refresh_secret_key_min_32_chars
+JWT_ACCESS_EXPIRES_IN=15m
+JWT_REFRESH_EXPIRES_IN=7d
+
+# Email Configuration (for OTP)
+GMAIL_USER=your_email@gmail.com
+GMAIL_APP_PASSWORD=your_gmail_app_password
+
+# Application Configuration
+APP_NAME=FlowState
+NODE_ENV=production
+PORT=3000
+FRONTEND_PORT=80
+
+# API URL (used during frontend build)
+API_URL=http://backend:3000/api
+```
+
+## 🧪 Testing
+
+```bash
+# Run all tests
+npx nx test
+
+# Run frontend tests
+npx nx test frontend
+
+# Run backend tests
+npx nx test backend
+
+# Run E2E tests
+npx nx e2e frontend-e2e
+```
+
+## 📝 Code Quality
+
+```bash
+# Lint all projects
+npx nx run-many --target=lint --all
+
+# Format code
+npx nx format:write
+
+# Type check
+npx nx run-many --target=typecheck --all
+```
+
+## 🚢 Deployment
+
+### Production Build
+
+```bash
+# Build both frontend and backend
+npx nx build frontend --configuration=production
+npx nx build backend --prod
+
+# Or use Docker
+docker-compose -f docker-compose.yml build
+docker-compose -f docker-compose.yml up -d
+```
+
+### Health Checks
+
+- Backend: http://localhost:3000/health/live
+- Frontend: http://localhost/health
+
+## 📚 Technology Stack
+
+- **Frontend**: Angular 17+, Tailwind CSS, TanStack Query, Angular Signals
+- **Backend**: NestJS, PostgreSQL, Redis, Prisma ORM, JWT Auth
+- **DevOps**: Docker, Docker Compose, Nginx
+- **Monorepo**: Nx
+
+## 🤝 Contributing
+
+1. Create a feature branch
+2. Make your changes
+3. Run tests and linter
+4. Submit a pull request
+
+## 📄 License
+
+MIT
+
+---
+
+Built with ❤️ using [Nx](https://nx.dev)

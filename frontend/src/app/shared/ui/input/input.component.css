@@ -1,0 +1,71 @@
+.fs-input-container {
+  @apply flex flex-col gap-1;
+}
+
+.input-label {
+  @apply text-sm font-medium text-text-primary;
+}
+
+.required {
+  @apply text-error ml-1;
+}
+
+.input-wrapper {
+  @apply relative flex items-center;
+}
+
+.fs-input {
+  @apply w-full px-4 py-3 rounded-md;
+  @apply bg-surface border border-gray-300;
+  @apply text-text-primary placeholder-text-tertiary;
+  @apply transition-all duration-150;
+  @apply focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent;
+  font-family: var(--font-family);
+}
+
+.fs-input:disabled {
+  @apply bg-gray-100 cursor-not-allowed opacity-60;
+}
+
+.fs-input.error {
+  @apply border-error focus:ring-error;
+}
+
+.fs-input.has-prefix {
+  @apply pl-11;
+}
+
+.fs-input.has-suffix {
+  @apply pr-11;
+}
+
+.size-sm .fs-input {
+  @apply px-3 py-2 text-sm;
+}
+
+.size-lg .fs-input {
+  @apply px-5 py-4 text-lg;
+}
+
+.prefix-icon,
+.suffix-icon {
+  @apply absolute text-text-secondary pointer-events-none;
+  @apply flex items-center justify-center w-5 h-5;
+}
+
+.prefix-icon {
+  @apply left-3;
+}
+
+.suffix-icon {
+  @apply right-3;
+}
+
+.hint {
+  @apply text-xs text-text-secondary;
+}
+
+.error-message {
+  @apply text-xs text-error font-medium;
+}
+

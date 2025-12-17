@@ -1,0 +1,74 @@
+.fs-badge {
+  @apply inline-flex items-center gap-1;
+  @apply font-medium rounded-full;
+  @apply transition-all duration-150;
+}
+
+.fs-badge.size-sm {
+  @apply px-2 py-0.5 text-xs;
+}
+
+.fs-badge.size-md {
+  @apply px-3 py-1 text-sm;
+}
+
+.fs-badge.size-lg {
+  @apply px-4 py-1.5 text-base;
+}
+
+.fs-badge.variant-default {
+  @apply bg-gray-100 text-gray-800;
+}
+
+.fs-badge.variant-primary {
+  @apply bg-primary text-white;
+}
+
+.fs-badge.variant-success {
+  @apply bg-green-500 text-white;
+}
+
+.fs-badge.variant-warning {
+  @apply bg-yellow-500 text-gray-900;
+}
+
+.fs-badge.variant-error {
+  @apply bg-red-500 text-white;
+}
+
+.fs-badge.variant-info {
+  @apply bg-blue-500 text-white;
+}
+
+.fs-badge.outlined {
+  @apply bg-transparent border-2;
+}
+
+.fs-badge.outlined.variant-default {
+  @apply border-gray-300 text-gray-700;
+}
+
+.fs-badge.outlined.variant-primary {
+  @apply border-primary text-primary;
+}
+
+.fs-badge.outlined.variant-success {
+  @apply border-green-500 text-green-600;
+}
+
+.fs-badge.outlined.variant-warning {
+  @apply border-yellow-500 text-yellow-600;
+}
+
+.fs-badge.outlined.variant-error {
+  @apply border-red-500 text-red-600;
+}
+
+.fs-badge.outlined.variant-info {
+  @apply border-blue-500 text-blue-600;
+}
+
+.badge-dot {
+  @apply w-2 h-2 rounded-full bg-current;
+}
+

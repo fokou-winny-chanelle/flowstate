@@ -1,12 +1,12 @@
-import { Injectable, signal, computed, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { computed, inject, Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
-  User,
-  LoginCredentials,
-  SignupData,
+    LoginCredentials,
+    SignupData,
+    User,
 } from '../models/types';
 import { QueryClientService } from './query-client.service';
 

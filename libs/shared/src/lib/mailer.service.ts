@@ -98,6 +98,7 @@ export class MailerService {
   private readonly fromEmail: string;
   private readonly fromName: string;
   private readonly appUrl: string;
+  private currentSmtpPort: number = 465; // Track current port for retry logic
   
   // eslint-disable-next-line @angular-eslint/prefer-inject
   constructor(private configService: ConfigService) {
@@ -234,13 +235,14 @@ export class MailerService {
         lastError = error;
         retries--;
         
-        // If it's a connection error and we have retries left, try recreating transporter
+          // If it's a connection error and we have retries left, try recreating transporter
         if (retries > 0 && (error.code === 'ETIMEDOUT' || error.code === 'ECONNREFUSED' || error.code === 'ESOCKET')) {
           this.logger.warn(`SMTP send failed (${error.code}), retrying... (${retries} attempts left)`);
           
           // Recreate transporter with TLS port as fallback
-          if (this.transporter.options.port === 465) {
+          if (this.currentSmtpPort === 465) {
             this.logger.log('Retrying with port 587 (TLS) instead of 465 (SSL)');
+            this.currentSmtpPort = 587;
             this.transporter = nodemailer.createTransport({
               host: 'smtp.gmail.com',
               port: 587,
@@ -255,6 +257,9 @@ export class MailerService {
               tls: {
                 rejectUnauthorized: false,
               },
+              pool: false,
+              maxConnections: 1,
+              maxMessages: 1,
             });
           }
           

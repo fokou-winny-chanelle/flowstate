@@ -105,8 +105,16 @@ export class MailerService {
     const gmailUser = this.configService.get<string>('GMAIL_USER');
     const gmailAppPassword = this.configService.get<string>('GMAIL_APP_PASSWORD');
     
+    // Log credentials status (without exposing password)
+    this.logger.log(`[MailerService] Initializing email service...`);
+    this.logger.log(`[MailerService] GMAIL_USER: ${gmailUser ? `${gmailUser.substring(0, 3)}***@${gmailUser.split('@')[1] || 'unknown'}` : 'NOT SET'}`);
+    this.logger.log(`[MailerService] GMAIL_APP_PASSWORD: ${gmailAppPassword ? `***${gmailAppPassword.substring(gmailAppPassword.length - 4)} (length: ${gmailAppPassword.length})` : 'NOT SET'}`);
+    
     if (!gmailUser || !gmailAppPassword) {
-      this.logger.warn('GMAIL_USER or GMAIL_APP_PASSWORD not found. Email service will not work.');
+      this.logger.error('GMAIL_USER or GMAIL_APP_PASSWORD not found. Email service will not work.');
+      this.logger.error(`[MailerService] Missing credentials - GMAIL_USER: ${!!gmailUser}, GMAIL_APP_PASSWORD: ${!!gmailAppPassword}`);
+    } else {
+      this.logger.log(`[MailerService] Gmail credentials loaded successfully`);
     }
     
     // Initialize Nodemailer with Gmail SMTP
@@ -199,6 +207,14 @@ export class MailerService {
   }
 
   async sendEmail(options: SendEmailOptions): Promise<void> {
+    // Log email attempt with credential check
+    const currentUser = this.configService.get<string>('GMAIL_USER');
+    const currentPassword = this.configService.get<string>('GMAIL_APP_PASSWORD');
+    this.logger.log(`[MailerService] Attempting to send email to: ${Array.isArray(options.to) ? options.to.join(', ') : options.to}`);
+    this.logger.log(`[MailerService] Using Gmail account: ${currentUser ? `${currentUser.substring(0, 3)}***@${currentUser.split('@')[1] || 'unknown'}` : 'NOT SET'}`);
+    this.logger.log(`[MailerService] Password available: ${!!currentPassword} (length: ${currentPassword?.length || 0})`);
+    this.logger.log(`[MailerService] Current SMTP port: ${this.currentSmtpPort}`);
+    
     let retries = 3;
     let lastError: Error | null = null;
     
@@ -243,13 +259,17 @@ export class MailerService {
           if (this.currentSmtpPort === 465) {
             this.logger.log('Retrying with port 587 (TLS) instead of 465 (SSL)');
             this.currentSmtpPort = 587;
+            const retryPassword = this.configService.get<string>('GMAIL_APP_PASSWORD');
+            const retryUser = this.configService.get<string>('GMAIL_USER') || this.fromEmail;
+            this.logger.log(`[MailerService] Retry - Using user: ${retryUser ? `${retryUser.substring(0, 3)}***@${retryUser.split('@')[1] || 'unknown'}` : 'NOT SET'}`);
+            this.logger.log(`[MailerService] Retry - Password available: ${!!retryPassword} (length: ${retryPassword?.length || 0})`);
             const tlsConfig: any = {
               host: 'smtp.gmail.com',
               port: 587,
               secure: false,
               auth: {
-                user: this.fromEmail,
-                pass: this.configService.get<string>('GMAIL_APP_PASSWORD'),
+                user: retryUser,
+                pass: retryPassword,
               },
               connectionTimeout: 120000,
               greetingTimeout: 60000,

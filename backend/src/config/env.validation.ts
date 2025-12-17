@@ -45,5 +45,5 @@ export const validationSchema = Joi.object({
   
   REDIS_HOST: Joi.string().allow('').default('localhost'),
   REDIS_PORT: Joi.number().integer().default(6379),
-}).options({ convert: true, allowUnknown: false });
+}).options({ convert: true, allowUnknown: true });
 

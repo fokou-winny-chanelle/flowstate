@@ -41,3 +41,6 @@ jobs:
       # Nx Cloud recommends fixes for failures to help you get CI green faster. Learn more: https://nx.dev/ci/features/self-healing-ci
       - run: npx nx fix-ci
         if: always()
+      
+      # Note: Deployment to Render is triggered automatically via deploy.yml workflow
+      # after CI passes successfully. Render also has native auto-deploy enabled.

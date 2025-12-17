@@ -43,7 +43,7 @@ export const validationSchema = Joi.object({
   
   FRONTEND_URL: Joi.string().uri().default('http://localhost:4200'),
   
-  REDIS_HOST: Joi.string().default('localhost'),
+  REDIS_HOST: Joi.string().allow('').default('localhost'),
   REDIS_PORT: Joi.number().integer().default(6379),
-}).options({ convert: true });
+}).options({ convert: true, allowUnknown: false });
 

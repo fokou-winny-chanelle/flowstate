@@ -11,6 +11,7 @@
   <mj-body background-color="#F9FAFB">
     <mj-section background-color="#ffffff" padding="40px 30px">
       <mj-column>
+        <mj-image src="{{appUrl}}/assets/logo-small.png" alt="FlowState" width="100px" padding="0 0 20px 0" />
         <mj-text align="center" font-size="50px" padding="0 0 10px 0">🔥</mj-text>
         <mj-text align="center" font-size="28px" font-weight="700" color="#F97316" padding="0 0 10px 0">
           {{streakDays}}-Day Streak!

@@ -9,6 +9,7 @@
   <mj-body background-color="#F3F4F6">
     <mj-section background-color="#FFFFFF" border-radius="12px" padding="40px 30px">
       <mj-column>
+        <mj-image src="{{appUrl}}/assets/logo-small.png" alt="FlowState" width="100px" padding="0 0 20px 0" />
         <mj-text font-size="28px" font-weight="700" color="#111827" align="center" padding-bottom="10px">
           ⚠️ Overdue Tasks Summary
         </mj-text>
